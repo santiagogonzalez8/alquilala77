@@ -20,6 +20,7 @@ export default function PublicarPropiedad() {
     amenities: []
   });
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const amenitiesDisponibles = [
     'Piscina', 'Vista a la playa', 'WiFi', 'Aire acondicionado', 
@@ -37,22 +38,39 @@ export default function PublicarPropiedad() {
     }
 
     setLoading(true);
+    setError('');
 
     try {
-      await addDoc(collection(db, 'propiedades'), {
+      console.log('Intentando publicar propiedad...');
+      console.log('Usuario:', auth.currentUser.email);
+      console.log('Datos:', formData);
+
+      const propiedadData = {
         ...formData,
         userId: auth.currentUser.uid,
         userEmail: auth.currentUser.email,
         fechaPublicacion: new Date().toISOString(),
         estado: 'disponible',
         temporada: 'verano'
-      });
+      };
 
-      alert('¡Propiedad publicada exitosamente!');
-      router.push('/');
+      const docRef = await addDoc(collection(db, 'propiedades'), propiedadData);
+      
+      console.log('Propiedad publicada con ID:', docRef.id);
+
+      // Mostrar mensaje de éxito
+      alert('🎉 ¡Propiedad publicada exitosamente!');
+      
+      // Redirigir a mis propiedades
+      router.push('/mis-propiedades');
+      
     } catch (error) {
-      console.error('Error al publicar:', error);
-      alert('Error al publicar la propiedad');
+      console.error('Error completo:', error);
+      console.error('Código de error:', error.code);
+      console.error('Mensaje:', error.message);
+      
+      setError(`Error al publicar: ${error.message}`);
+      alert(`Error al publicar la propiedad: ${error.message}`);
     } finally {
       setLoading(false);
     }
@@ -87,6 +105,19 @@ export default function PublicarPropiedad() {
       </div>
 
       <div className={styles.content} style={{maxWidth: '800px', margin: '0 auto', padding: '2rem'}}>
+        {error && (
+          <div style={{
+            background: '#fee2e2',
+            color: '#991b1b',
+            padding: '1rem',
+            borderRadius: '8px',
+            marginBottom: '1rem',
+            fontWeight: 'bold'
+          }}>
+            {error}
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} style={{background: 'white', padding: '2rem', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)'}}>
           
           <div style={{marginBottom: '1.5rem'}}>
@@ -140,6 +171,7 @@ export default function PublicarPropiedad() {
                 value={formData.precioPorNoche}
                 onChange={handleChange}
                 required
+                min="1"
                 placeholder="250"
                 style={{width: '100%', padding: '0.75rem', border: '2px solid #e5e7eb', borderRadius: '8px', fontSize: '1rem'}}
               />
@@ -153,6 +185,7 @@ export default function PublicarPropiedad() {
                 value={formData.huespedes}
                 onChange={handleChange}
                 required
+                min="1"
                 placeholder="6"
                 style={{width: '100%', padding: '0.75rem', border: '2px solid #e5e7eb', borderRadius: '8px', fontSize: '1rem'}}
               />
@@ -168,6 +201,7 @@ export default function PublicarPropiedad() {
                 value={formData.dormitorios}
                 onChange={handleChange}
                 required
+                min="1"
                 placeholder="3"
                 style={{width: '100%', padding: '0.75rem', border: '2px solid #e5e7eb', borderRadius: '8px', fontSize: '1rem'}}
               />
@@ -181,6 +215,7 @@ export default function PublicarPropiedad() {
                 value={formData.camas}
                 onChange={handleChange}
                 required
+                min="1"
                 placeholder="4"
                 style={{width: '100%', padding: '0.75rem', border: '2px solid #e5e7eb', borderRadius: '8px', fontSize: '1rem'}}
               />
@@ -194,6 +229,7 @@ export default function PublicarPropiedad() {
                 value={formData.banos}
                 onChange={handleChange}
                 required
+                min="1"
                 placeholder="2"
                 style={{width: '100%', padding: '0.75rem', border: '2px solid #e5e7eb', borderRadius: '8px', fontSize: '1rem'}}
               />
@@ -243,19 +279,24 @@ export default function PublicarPropiedad() {
             disabled={loading}
             style={{
               width: '100%',
-              background: 'linear-gradient(135deg, #3b82f6 0%, #1e40af 100%)',
+              background: loading ? '#9ca3af' : 'linear-gradient(135deg, #3b82f6 0%, #1e40af 100%)',
               color: 'white',
               padding: '1rem',
               borderRadius: '8px',
               border: 'none',
               fontSize: '1.125rem',
               fontWeight: 'bold',
-              cursor: loading ? 'not-allowed' : 'pointer',
-              opacity: loading ? 0.6 : 1
+              cursor: loading ? 'not-allowed' : 'pointer'
             }}
           >
-            {loading ? 'Publicando...' : '🏖️ Publicar Propiedad de Verano'}
+            {loading ? '⏳ Publicando...' : '🏖️ Publicar Propiedad de Verano'}
           </button>
+
+          {loading && (
+            <p style={{textAlign: 'center', color: '#6b7280', marginTop: '1rem', fontSize: '0.875rem'}}>
+              Esto puede tardar unos segundos...
+            </p>
+          )}
         </form>
       </div>
     </div>

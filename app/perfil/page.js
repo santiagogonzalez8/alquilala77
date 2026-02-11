@@ -19,6 +19,8 @@ export default function Perfil() {
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [uploading, setUploading] = useState(false)
+  const [showSuccess, setShowSuccess] = useState(false)
+  const [showPasswordSuccess, setShowPasswordSuccess] = useState(false)
 
   useEffect(() => {
     loadUserData()
@@ -77,7 +79,8 @@ export default function Perfil() {
         updatedAt: new Date()
       })
       
-      alert('Foto actualizada')
+      setShowSuccess(true)
+      setTimeout(() => setShowSuccess(false), 3000)
     } catch (error) {
       console.error('Error:', error)
       alert('Error al subir la foto')
@@ -93,7 +96,12 @@ export default function Perfil() {
         ...userData,
         updatedAt: new Date()
       })
-      alert('Perfil actualizado')
+      
+      setShowSuccess(true)
+      setTimeout(() => setShowSuccess(false), 3000)
+      
+      // Recargar datos actualizados
+      await loadUserData()
     } catch (error) {
       console.error('Error:', error)
       alert('Error al guardar')
@@ -115,7 +123,10 @@ export default function Perfil() {
 
     try {
       await updatePassword(auth.currentUser, newPassword)
-      alert('Contraseña actualizada')
+      
+      setShowPasswordSuccess(true)
+      setTimeout(() => setShowPasswordSuccess(false), 3000)
+      
       setNewPassword('')
       setConfirmPassword('')
     } catch (error) {
@@ -132,6 +143,50 @@ export default function Perfil() {
     <div className={styles.page}>
       <div className={styles.container}>
         <h1>Mi Perfil</h1>
+
+        {/* Mensaje de éxito - Perfil */}
+        {showSuccess && (
+          <div style={{
+            position: 'fixed',
+            top: '20px',
+            right: '20px',
+            background: '#10b981',
+            color: 'white',
+            padding: '1rem 1.5rem',
+            borderRadius: '8px',
+            boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+            zIndex: 1000,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            fontWeight: 'bold',
+            animation: 'slideIn 0.3s ease'
+          }}>
+            ✅ Perfil actualizado
+          </div>
+        )}
+
+        {/* Mensaje de éxito - Contraseña */}
+        {showPasswordSuccess && (
+          <div style={{
+            position: 'fixed',
+            top: '20px',
+            right: '20px',
+            background: '#10b981',
+            color: 'white',
+            padding: '1rem 1.5rem',
+            borderRadius: '8px',
+            boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+            zIndex: 1000,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            fontWeight: 'bold',
+            animation: 'slideIn 0.3s ease'
+          }}>
+            ✅ Contraseña actualizada
+          </div>
+        )}
 
         <div className={styles.photoSection}>
           <div className={styles.photo}>
@@ -153,100 +208,3 @@ export default function Perfil() {
               style={{ display: 'none' }}
             />
             <p className={styles.hint}>400×400px, máx 2MB</p>
-          </div>
-        </div>
-
-        <div className={styles.section}>
-          <h3>Información Personal</h3>
-          <form onSubmit={handleSaveProfile}>
-            <div className={styles.formGroup}>
-              <label>Nombre completo *</label>
-              <input
-                type="text"
-                name="displayName"
-                value={userData.displayName}
-                onChange={handleChange}
-                required
-              />
-            </div>
-
-            <div className={styles.formGroup}>
-              <label>Correo electrónico *</label>
-              <input
-                type="email"
-                value={userData.email}
-                disabled
-              />
-            </div>
-
-            <div className={styles.formGroup}>
-              <label>Teléfono</label>
-              <input
-                type="tel"
-                name="phone"
-                value={userData.phone}
-                onChange={handleChange}
-                placeholder="+598 99 123 456"
-              />
-            </div>
-
-            <div className={styles.formGroup}>
-              <label>Ubicación</label>
-              <input
-                type="text"
-                name="location"
-                value={userData.location}
-                onChange={handleChange}
-                placeholder="Montevideo, Uruguay"
-              />
-            </div>
-
-            <div className={styles.formGroup}>
-              <label>Sobre mí</label>
-              <textarea
-                name="bio"
-                value={userData.bio}
-                onChange={handleChange}
-                rows="4"
-                placeholder="Cuéntanos sobre ti..."
-              />
-            </div>
-
-            <button type="submit" className={styles.btnSave}>
-              Guardar Cambios
-            </button>
-          </form>
-        </div>
-
-        <div className={styles.section}>
-          <h3>Cambiar Contraseña</h3>
-          <form onSubmit={handleChangePassword}>
-            <div className={styles.formGroup}>
-              <label>Nueva contraseña</label>
-              <input
-                type="password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="Mínimo 6 caracteres"
-              />
-            </div>
-
-            <div className={styles.formGroup}>
-              <label>Confirmar contraseña</label>
-              <input
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Repite la contraseña"
-              />
-            </div>
-
-            <button type="submit" className={styles.btnSave}>
-              Cambiar Contraseña
-            </button>
-          </form>
-        </div>
-      </div>
-    </div>
-  )
-}
