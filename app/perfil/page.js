@@ -100,7 +100,6 @@ export default function Perfil() {
       setShowSuccess(true)
       setTimeout(() => setShowSuccess(false), 3000)
       
-      // Recargar datos actualizados
       await loadUserData()
     } catch (error) {
       console.error('Error:', error)
@@ -144,7 +143,6 @@ export default function Perfil() {
       <div className={styles.container}>
         <h1>Mi Perfil</h1>
 
-        {/* Mensaje de éxito - Perfil */}
         {showSuccess && (
           <div style={{
             position: 'fixed',
@@ -159,14 +157,12 @@ export default function Perfil() {
             display: 'flex',
             alignItems: 'center',
             gap: '0.5rem',
-            fontWeight: 'bold',
-            animation: 'slideIn 0.3s ease'
+            fontWeight: 'bold'
           }}>
             ✅ Perfil actualizado
           </div>
         )}
 
-        {/* Mensaje de éxito - Contraseña */}
         {showPasswordSuccess && (
           <div style={{
             position: 'fixed',
@@ -181,8 +177,7 @@ export default function Perfil() {
             display: 'flex',
             alignItems: 'center',
             gap: '0.5rem',
-            fontWeight: 'bold',
-            animation: 'slideIn 0.3s ease'
+            fontWeight: 'bold'
           }}>
             ✅ Contraseña actualizada
           </div>
@@ -208,3 +203,100 @@ export default function Perfil() {
               style={{ display: 'none' }}
             />
             <p className={styles.hint}>400×400px, máx 2MB</p>
+          </div>
+        </div>
+
+        <div className={styles.section}>
+          <h3>Información Personal</h3>
+          <form onSubmit={handleSaveProfile}>
+            <div className={styles.formGroup}>
+              <label>Nombre completo *</label>
+              <input
+                type="text"
+                name="displayName"
+                value={userData.displayName}
+                onChange={handleChange}
+                required
+              />
+            </div>
+
+            <div className={styles.formGroup}>
+              <label>Correo electrónico *</label>
+              <input
+                type="email"
+                value={userData.email}
+                disabled
+              />
+            </div>
+
+            <div className={styles.formGroup}>
+              <label>Teléfono</label>
+              <input
+                type="tel"
+                name="phone"
+                value={userData.phone}
+                onChange={handleChange}
+                placeholder="+598 99 123 456"
+              />
+            </div>
+
+            <div className={styles.formGroup}>
+              <label>Ubicación</label>
+              <input
+                type="text"
+                name="location"
+                value={userData.location}
+                onChange={handleChange}
+                placeholder="Montevideo, Uruguay"
+              />
+            </div>
+
+            <div className={styles.formGroup}>
+              <label>Sobre mí</label>
+              <textarea
+                name="bio"
+                value={userData.bio}
+                onChange={handleChange}
+                rows="4"
+                placeholder="Cuéntanos sobre ti..."
+              />
+            </div>
+
+            <button type="submit" className={styles.btnSave}>
+              Guardar Cambios
+            </button>
+          </form>
+        </div>
+
+        <div className={styles.section}>
+          <h3>Cambiar Contraseña</h3>
+          <form onSubmit={handleChangePassword}>
+            <div className={styles.formGroup}>
+              <label>Nueva contraseña</label>
+              <input
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Mínimo 6 caracteres"
+              />
+            </div>
+
+            <div className={styles.formGroup}>
+              <label>Confirmar contraseña</label>
+              <input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Repite la contraseña"
+              />
+            </div>
+
+            <button type="submit" className={styles.btnSave}>
+              Cambiar Contraseña
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  )
+}
