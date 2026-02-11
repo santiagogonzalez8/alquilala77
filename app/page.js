@@ -33,7 +33,7 @@ export default function Home() {
 
   return (
     <div className={styles.home}>
-      {/* Botón de Admin - solo visible para gosanti2000@gmail.com */}
+      {/* Botón de Admin con OLA - solo visible para gosanti2000@gmail.com */}
       {esAdmin && (
         <button 
           onClick={() => router.push('/admin')}
@@ -41,7 +41,7 @@ export default function Home() {
             position: 'fixed',
             top: '20px',
             right: '80px',
-            background: 'linear-gradient(135deg, #f97316 0%, #dc2626 100%)',
+            background: 'linear-gradient(135deg, #1e3a5f 0%, #0f2942 100%)',
             color: 'white',
             border: 'none',
             padding: '10px 20px',
@@ -49,14 +49,23 @@ export default function Home() {
             fontWeight: 'bold',
             cursor: 'pointer',
             fontSize: '14px',
-            boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+            boxShadow: '0 4px 6px rgba(30, 58, 95, 0.3)',
             zIndex: 1000,
             display: 'flex',
             alignItems: 'center',
-            gap: '8px'
+            gap: '8px',
+            transition: 'all 0.2s'
+          }}
+          onMouseEnter={(e) => {
+            e.target.style.transform = 'translateY(-2px)';
+            e.target.style.boxShadow = '0 6px 12px rgba(30, 58, 95, 0.4)';
+          }}
+          onMouseLeave={(e) => {
+            e.target.style.transform = 'translateY(0)';
+            e.target.style.boxShadow = '0 4px 6px rgba(30, 58, 95, 0.3)';
           }}
         >
-          👑 Panel Admin
+          <span style={{fontSize: '18px'}}>🌊</span> Panel Admin
         </button>
       )}
 
