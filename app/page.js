@@ -17,19 +17,19 @@ export default function Home() {
   const slides = [
     {
       name: 'Punta del Este',
-      image: 'https://cdn1.infocasas.com.uy/web/6712c5aa2c0ec_portada-ceee.jpg'
+      image: 'https://www.mejoruruguay.com/wp-content/uploads/2025/04/Puerto-Punta.webp'
     },
     {
       name: 'Cabo Polonio',
-      image: 'https://s3.amazonaws.com/turismorocha/destinos/5/med/cabo-polonio-021102000-1451876133.jpg'
+      image: 'https://demayorquierosermochilera.com/wp-content/uploads/2023/10/que-ver-cabo-polonio.webp'
     },
     {
       name: 'Punta del Diablo',
-      image: 'https://dynamic-media-cdn.tripadvisor.com/media/photo-o/05/c0/aa/51/playa-de-punta-del-diablo.jpg?w=700&h=-1&s=1'
+      image: 'https://images.trvl-media.com/place/6144089/c9fc188e-8ec8-47ef-86ad-3e9c9a9eb8dd.jpg'
     },
     {
       name: 'La Paloma',
-      image: 'https://lapalomahoy.uy/09-2021/resize_1630502091.jpg'
+      image: 'https://radiocarve.uy/wp-content/uploads/2024/08/la-paloma-2.jpg'
     },
     {
       name: 'Colonia del Sacramento',
@@ -216,7 +216,7 @@ export default function Home() {
           →
         </button>
 
-        {/* BARRA DE BÚSQUEDA Y TEXTO - ABAJO (justo arriba de los indicadores) */}
+        {/* BARRA DE BÚSQUEDA Y TEXTO - ABAJO */}
         <div style={{
           position: 'absolute',
           bottom: '5.5rem',
