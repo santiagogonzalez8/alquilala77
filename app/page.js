@@ -34,6 +34,10 @@ export default function Home() {
     {
       name: 'Colonia del Sacramento',
       image: 'https://www.guruguay.com/wp-content/uploads/2021/05/colonia_del_sacramento_de_los_suspiros_street_night.png'
+    },
+    {
+      name: 'Punta Negra',
+      image: 'https://pbs.twimg.com/media/G5pSA0zWMAAxd2v.jpg'
     }
   ]
 
