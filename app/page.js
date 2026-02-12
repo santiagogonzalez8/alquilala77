@@ -14,27 +14,26 @@ export default function Home() {
   const [esAdmin, setEsAdmin] = useState(false)
   const [currentSlide, setCurrentSlide] = useState(0)
 
-  // Fotos características REALES de cada lugar turístico de Uruguay
   const slides = [
     {
       name: 'Punta del Este',
-      image: 'https://dynamic-media-cdn.tripadvisor.com/media/photo-o/0f/a3/87/d5/getlstd-property-photo.jpg?w=1200&h=-1&s=1'
+      image: 'https://cdn1.infocasas.com.uy/web/6712c5aa2c0ec_portada-ceee.jpg'
     },
     {
       name: 'Cabo Polonio',
-      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8f/Cabo_Polonio_Lighthouse.jpg/1200px-Cabo_Polonio_Lighthouse.jpg'
+      image: 'https://s3.amazonaws.com/turismorocha/destinos/5/med/cabo-polonio-021102000-1451876133.jpg'
     },
     {
       name: 'Punta del Diablo',
-      image: 'https://www.gub.uy/ministerio-turismo/sites/ministerio-turismo/files/2019-07/punta-del-diablo.jpg'
+      image: 'https://dynamic-media-cdn.tripadvisor.com/media/photo-o/05/c0/aa/51/playa-de-punta-del-diablo.jpg?w=700&h=-1&s=1'
     },
     {
       name: 'La Paloma',
-      image: 'https://turismo.gub.uy/images/hero/la-paloma-rocha.jpg'
+      image: 'https://lapalomahoy.uy/09-2021/resize_1630502091.jpg'
     },
     {
       name: 'Colonia del Sacramento',
-      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3c/Colonia_del_Sacramento_Street.jpg/1200px-Colonia_del_Sacramento_Street.jpg'
+      image: 'https://www.guruguay.com/wp-content/uploads/2021/05/colonia_del_sacramento_de_los_suspiros_street_night.png'
     }
   ]
 
@@ -101,7 +100,7 @@ export default function Home() {
         </button>
       )}
 
-      <div className={styles.heroSection} style={{position: 'relative'}}>
+      <div className={styles.heroSection} style={{position: 'relative', overflow: 'hidden'}}>
         {/* Carrusel de imágenes de fondo */}
         {slides.map((slide, index) => (
           <div
@@ -115,6 +114,7 @@ export default function Home() {
               backgroundImage: `linear-gradient(rgba(0,0,0,0.35), rgba(0,0,0,0.35)), url(${slide.image})`,
               backgroundSize: 'cover',
               backgroundPosition: 'center',
+              backgroundRepeat: 'no-repeat',
               opacity: currentSlide === index ? 1 : 0,
               transition: 'opacity 0.8s ease',
               zIndex: currentSlide === index ? 1 : 0
@@ -203,83 +203,4 @@ export default function Home() {
             fontWeight: 'bold'
           }}
           onMouseEnter={(e) => {
-            e.target.style.transform = 'translateY(-50%) scale(1.15)';
-            e.target.style.background = '#1e3a5f';
-            e.target.style.color = 'white';
-          }}
-          onMouseLeave={(e) => {
-            e.target.style.transform = 'translateY(-50%) scale(1)';
-            e.target.style.background = 'rgba(255, 255, 255, 0.95)';
-            e.target.style.color = '#1e3a5f';
-          }}
-        >
-          →
-        </button>
-
-        {/* Indicadores de posición - ABAJO */}
-        <div style={{
-          position: 'absolute',
-          bottom: '2rem',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          display: 'flex',
-          gap: '0.75rem',
-          zIndex: 20
-        }}>
-          {slides.map((_, index) => (
-            <button
-              key={index}
-              onClick={() => setCurrentSlide(index)}
-              style={{
-                width: currentSlide === index ? '40px' : '12px',
-                height: '12px',
-                borderRadius: '6px',
-                border: '2px solid white',
-                background: currentSlide === index ? '#1e3a5f' : 'rgba(255, 255, 255, 0.6)',
-                cursor: 'pointer',
-                transition: 'all 0.3s',
-                boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
-              }}
-            />
-          ))}
-        </div>
-
-        {/* BARRA DE BÚSQUEDA Y TEXTO - ABAJO (justo arriba de los indicadores) */}
-        <div style={{
-          position: 'absolute',
-          bottom: '5rem',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          width: '90%',
-          maxWidth: '700px',
-          zIndex: 15,
-          textAlign: 'center'
-        }}>
-          <p style={{
-            color: 'white',
-            fontSize: '1.25rem',
-            fontWeight: '600',
-            marginBottom: '1.5rem',
-            textShadow: '0 2px 4px rgba(0,0,0,0.5)'
-          }}>
-            Gestión profesional de alquileres temporales
-          </p>
-          <div className={styles.searchBar}>
-            <input 
-              type="text" 
-              placeholder="Busca propiedades asociadas en la plataforma"
-              className={styles.searchInput}
-            />
-            <Link href="/mis-propiedades" className={styles.searchBtn}>
-              Buscar
-            </Link>
-          </div>
-        </div>
-      </div>
-
-      <div className={styles.content}>
-        <p className={styles.noResults}>No se encontraron propiedades</p>
-      </div>
-    </div>
-  )
-}
+            e.target.style.transform = 'translateY(-50%)
