@@ -21,16 +21,16 @@
 }
 
 .navInner {
-  max-width: var(--max-width);
-  margin: 0 auto;
-  padding: 0 2rem;
+  max-width: 100%;
+  margin: 0;
+  padding: 0 1rem;
   height: var(--navbar-height);
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 
-/* Logo */
+/* Logo — pegado a la izquierda */
 .logo {
   display: flex;
   align-items: center;
@@ -61,7 +61,7 @@
   color: var(--color-primary);
 }
 
-/* Lado derecho */
+/* Lado derecho — pegado a la derecha */
 .navRight {
   display: flex;
   align-items: center;
@@ -361,7 +361,7 @@
    ============================================ */
 @media (max-width: 768px) {
   .navInner {
-    padding: 0 1rem;
+    padding: 0 0.75rem;
   }
 
   .navLinks {
