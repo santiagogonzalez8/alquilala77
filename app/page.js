@@ -17,27 +17,33 @@ export default function Home() {
   const slides = [
     {
       name: 'Punta del Este',
-      image: 'https://www.mejoruruguay.com/wp-content/uploads/2025/04/Puerto-Punta.webp'
+      image: 'https://www.mejoruruguay.com/wp-content/uploads/2025/04/Puerto-Punta.webp',
+      position: 'center'
     },
     {
       name: 'Cabo Polonio',
-      image: 'https://demayorquierosermochilera.com/wp-content/uploads/2023/10/que-ver-cabo-polonio.webp'
+      image: 'https://demayorquierosermochilera.com/wp-content/uploads/2023/10/que-ver-cabo-polonio.webp',
+      position: 'center'
     },
     {
       name: 'Punta del Diablo',
-      image: 'https://images.trvl-media.com/place/6144089/c9fc188e-8ec8-47ef-86ad-3e9c9a9eb8dd.jpg'
+      image: 'https://images.trvl-media.com/place/6144089/c9fc188e-8ec8-47ef-86ad-3e9c9a9eb8dd.jpg',
+      position: 'center'
     },
     {
       name: 'La Paloma',
-      image: 'https://content.r9cdn.net/rimg/dimg/9f/96/f2478ec8-city-67086-172920a6c3d.jpg?crop=true&width=1366&height=768&xhint=3930&yhint=1459'
+      image: 'https://content.r9cdn.net/rimg/dimg/9f/96/f2478ec8-city-67086-172920a6c3d.jpg?crop=true&width=1366&height=768&xhint=3930&yhint=1459',
+      position: 'center'
     },
     {
       name: 'Colonia del Sacramento',
-      image: 'https://www.guruguay.com/wp-content/uploads/2021/05/colonia_del_sacramento_de_los_suspiros_street_night.png'
+      image: 'https://www.guruguay.com/wp-content/uploads/2021/05/colonia_del_sacramento_de_los_suspiros_street_night.png',
+      position: 'center'
     },
     {
       name: 'Punta Negra',
-      image: 'https://pbs.twimg.com/media/G5pSA0zWMAAxd2v.jpg'
+      image: 'https://pbs.twimg.com/media/G5pSA0zWMAAxd2v.jpg',
+      position: 'bottom right'
     }
   ]
 
@@ -117,7 +123,7 @@ export default function Home() {
               height: '100%',
               backgroundImage: `linear-gradient(rgba(0,0,0,0.35), rgba(0,0,0,0.35)), url(${slide.image})`,
               backgroundSize: 'cover',
-              backgroundPosition: 'center',
+              backgroundPosition: slide.position || 'center',
               backgroundRepeat: 'no-repeat',
               opacity: currentSlide === index ? 1 : 0,
               transition: 'opacity 0.8s ease',
