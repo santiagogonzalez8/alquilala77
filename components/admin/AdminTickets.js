@@ -20,7 +20,7 @@ export default function AdminTickets({ tickets, onRefresh }) {
       await firestoreUpdate('tickets-soporte', id, { estado: nuevoEstado });
       onRefresh();
     } catch (error) {
-      alert('Error al actualizar');
+      alert('Error al actualizar: ' + error.message);
     }
   };
 
@@ -30,7 +30,7 @@ export default function AdminTickets({ tickets, onRefresh }) {
       await firestoreDelete('tickets-soporte', id);
       onRefresh();
     } catch (error) {
-      alert('Error al eliminar');
+      alert('Error al eliminar: ' + error.message);
     }
   };
 
@@ -48,11 +48,7 @@ export default function AdminTickets({ tickets, onRefresh }) {
       <div className={styles.panelHeader}>
         <h2 className={styles.panelTitle}>💬 Tickets de Soporte ({filtrados.length})</h2>
         <div className={styles.filterBar}>
-          <select
-            value={filtroEstado}
-            onChange={(e) => setFiltroEstado(e.target.value)}
-            className={styles.filterSelect}
-          >
+          <select value={filtroEstado} onChange={(e) => setFiltroEstado(e.target.value)} className={styles.filterSelect}>
             <option value="todos">Todos</option>
             <option value="pendiente">⏳ Pendiente</option>
             <option value="en-proceso">🔵 En proceso</option>
@@ -86,9 +82,7 @@ export default function AdminTickets({ tickets, onRefresh }) {
                     💬 {ticket.mensaje}
                   </p>
                   <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginTop: '0.4rem' }}>
-                    <span className={`${styles.badge} ${getBadgeClass(ticket.estado)}`}>
-                      {ticket.estado}
-                    </span>
+                    <span className={`${styles.badge} ${getBadgeClass(ticket.estado)}`}>{ticket.estado}</span>
                     {ticket.fecha && (
                       <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
                         📅 {new Date(ticket.fecha).toLocaleDateString('es-UY')}
@@ -97,22 +91,15 @@ export default function AdminTickets({ tickets, onRefresh }) {
                   </div>
                 </div>
                 <div className={styles.itemActions} onClick={(e) => e.stopPropagation()}>
-                  <select
-                    value={ticket.estado}
-                    onChange={(e) => cambiarEstado(ticket.id, e.target.value)}
-                    className={styles.selectEstado}
-                  >
+                  <select value={ticket.estado} onChange={(e) => cambiarEstado(ticket.id, e.target.value)} className={styles.selectEstado}>
                     <option value="pendiente">Pendiente</option>
                     <option value="en-proceso">En proceso</option>
                     <option value="resuelto">Resuelto</option>
                   </select>
-                  <button onClick={() => eliminar(ticket.id)} className={styles.btnDanger}>
-                    🗑️
-                  </button>
+                  <button onClick={() => eliminar(ticket.id)} className={styles.btnDanger}>🗑️</button>
                 </div>
               </div>
 
-              {/* Expandido — mensaje completo */}
               {expandido === ticket.id && (
                 <div style={{
                   background: '#f8f9fa', padding: '1.25rem',
@@ -133,8 +120,7 @@ export default function AdminTickets({ tickets, onRefresh }) {
                     </a>
                     <a
                       href={`https://wa.me/?text=Hola ${ticket.nombre}! Respecto a tu consulta en Alquilala...`}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                      target="_blank" rel="noopener noreferrer"
                       className={styles.btnAccent}
                     >
                       💬 WhatsApp

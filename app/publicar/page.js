@@ -48,7 +48,6 @@ function PublicarContenido() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMsg('');
-
     const user = auth.currentUser;
     if (!user) { router.push('/login'); return; }
 
@@ -58,12 +57,11 @@ function PublicarContenido() {
 
     try {
       let fotosURLs = [];
-      const totalSteps = fotos.length + 1;
 
       if (fotos.length > 0) {
         setEtapa('Subiendo fotos...');
         for (let i = 0; i < fotos.length; i++) {
-          setProgreso(Math.round(((i) / totalSteps) * 85) + 5);
+          setProgreso(Math.round((i / fotos.length) * 80) + 5);
           try {
             const foto = fotos[i];
             const fileName = `propiedades/${user.uid}/${Date.now()}_${i}.jpg`;
@@ -100,13 +98,12 @@ function PublicarContenido() {
         userEmail: user.email || '',
         fechaPublicacion: new Date().toISOString(),
         estado: 'pendiente',
-        temporada: 'verano'
+        temporada: 'verano',
       });
 
       setProgreso(100);
       setEtapa('¡Publicada!');
       setShowSuccess(true);
-
       setTimeout(() => router.push('/mis-propiedades'), 2000);
 
     } catch (error) {
@@ -153,9 +150,12 @@ function PublicarContenido() {
             {fotos.length > 0 && (
               <div className={styles.photosGrid}>
                 {fotos.map((foto, index) => (
-                  <div key={foto.id} draggable onDragStart={(e) => handleDragStart(e, index)}
-                    onDragOver={handleDragOver} onDrop={(e) => handleDrop(e, index)}
-                    className={styles.photoItem} style={{ opacity: draggedIndex === index ? 0.5 : 1 }}>
+                  <div key={foto.id} draggable
+                    onDragStart={(e) => handleDragStart(e, index)}
+                    onDragOver={handleDragOver}
+                    onDrop={(e) => handleDrop(e, index)}
+                    className={styles.photoItem}
+                    style={{ opacity: draggedIndex === index ? 0.5 : 1 }}>
                     <img src={foto.preview} alt={`Foto ${index + 1}`} />
                     {index === 0 && <div className={styles.photoBadge}>PORTADA</div>}
                     <div className={styles.photoNumber}>{index + 1}</div>
@@ -172,28 +172,46 @@ function PublicarContenido() {
 
           <div className={styles.section}>
             <h2 className={styles.sectionTitle}>🏠 Datos de la propiedad</h2>
-            <div className={styles.formGroup}><label>Título *</label>
-              <input type="text" name="titulo" value={formData.titulo} onChange={handleChange} required
-                placeholder="Ej: Casa en Punta Negra para 6 personas con piscina y vista al mar" /></div>
-            <div className={styles.formGroup}><label>Ubicación *</label>
-              <input type="text" name="ubicacion" value={formData.ubicacion} onChange={handleChange} required placeholder="Ej: Punta Negra, Maldonado" /></div>
-            <div className={styles.formGroup}><label>Tipo *</label>
+            <div className={styles.formGroup}>
+              <label>Título *</label>
+              <input type="text" name="titulo" value={formData.titulo} onChange={handleChange} required placeholder="Ej: Casa en Punta Negra para 6 personas con piscina" />
+            </div>
+            <div className={styles.formGroup}>
+              <label>Ubicación *</label>
+              <input type="text" name="ubicacion" value={formData.ubicacion} onChange={handleChange} required placeholder="Ej: Punta Negra, Maldonado" />
+            </div>
+            <div className={styles.formGroup}>
+              <label>Tipo *</label>
               <select name="tipoPropiedad" value={formData.tipoPropiedad} onChange={handleChange}>
-                <option value="Casa">Casa</option><option value="Apartamento">Apartamento</option>
-                <option value="Cabaña">Cabaña</option><option value="Chalet">Chalet</option></select></div>
+                <option value="Casa">Casa</option>
+                <option value="Apartamento">Apartamento</option>
+                <option value="Cabaña">Cabaña</option>
+                <option value="Chalet">Chalet</option>
+              </select>
+            </div>
             <div className={styles.formRow}>
-              <div className={styles.formGroup}><label>Precio/noche (USD) *</label>
-                <input type="number" name="precioPorNoche" value={formData.precioPorNoche} onChange={handleChange} required min="1" placeholder="250" /></div>
-              <div className={styles.formGroup}><label>Huéspedes *</label>
-                <input type="number" name="huespedes" value={formData.huespedes} onChange={handleChange} required min="1" placeholder="6" /></div>
+              <div className={styles.formGroup}>
+                <label>Precio/noche (USD) *</label>
+                <input type="number" name="precioPorNoche" value={formData.precioPorNoche} onChange={handleChange} required min="1" placeholder="250" />
+              </div>
+              <div className={styles.formGroup}>
+                <label>Huéspedes *</label>
+                <input type="number" name="huespedes" value={formData.huespedes} onChange={handleChange} required min="1" placeholder="6" />
+              </div>
             </div>
             <div className={styles.formRow3}>
-              <div className={styles.formGroup}><label>Dormitorios *</label>
-                <input type="number" name="dormitorios" value={formData.dormitorios} onChange={handleChange} required min="1" placeholder="3" /></div>
-              <div className={styles.formGroup}><label>Camas *</label>
-                <input type="number" name="camas" value={formData.camas} onChange={handleChange} required min="1" placeholder="4" /></div>
-              <div className={styles.formGroup}><label>Baños *</label>
-                <input type="number" name="banos" value={formData.banos} onChange={handleChange} required min="1" placeholder="2" /></div>
+              <div className={styles.formGroup}>
+                <label>Dormitorios *</label>
+                <input type="number" name="dormitorios" value={formData.dormitorios} onChange={handleChange} required min="1" placeholder="3" />
+              </div>
+              <div className={styles.formGroup}>
+                <label>Camas *</label>
+                <input type="number" name="camas" value={formData.camas} onChange={handleChange} required min="1" placeholder="4" />
+              </div>
+              <div className={styles.formGroup}>
+                <label>Baños *</label>
+                <input type="number" name="banos" value={formData.banos} onChange={handleChange} required min="1" placeholder="2" />
+              </div>
             </div>
           </div>
 
@@ -202,7 +220,9 @@ function PublicarContenido() {
             <div className={styles.amenitiesGrid}>
               {amenitiesDisponibles.map(amenity => (
                 <button key={amenity} type="button" onClick={() => toggleAmenity(amenity)}
-                  className={`${styles.amenityBtn} ${formData.amenities.includes(amenity) ? styles.amenityActive : ''}`}>{amenity}</button>
+                  className={`${styles.amenityBtn} ${formData.amenities.includes(amenity) ? styles.amenityActive : ''}`}>
+                  {amenity}
+                </button>
               ))}
             </div>
           </div>
@@ -211,7 +231,8 @@ function PublicarContenido() {
             <h2 className={styles.sectionTitle}>📝 Descripción</h2>
             <div className={styles.formGroup}>
               <textarea name="descripcion" value={formData.descripcion} onChange={handleChange} required rows="5"
-                placeholder="Describí tu propiedad: ubicación, características, qué incluye..." /></div>
+                placeholder="Describí tu propiedad: ubicación, características, qué incluye..." />
+            </div>
           </div>
 
           {errorMsg && (
@@ -225,8 +246,7 @@ function PublicarContenido() {
 
           {loading && (
             <div style={{ marginBottom: '1rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem',
-                fontSize: '0.9rem', fontWeight: 600, color: 'var(--color-primary)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.9rem', fontWeight: 600, color: 'var(--color-primary)' }}>
                 <span>{etapa}</span><span>{progreso}%</span>
               </div>
               <div style={{ width: '100%', height: '14px', background: '#e8e8e8', borderRadius: '7px', overflow: 'hidden' }}>

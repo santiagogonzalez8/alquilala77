@@ -1,8 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { auth, db } from '@/lib/firebase';
-import { collection, getDocs } from 'firebase/firestore';
+import { auth, firestoreGetAll } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
 import { isAdmin } from '@/lib/adminConfig';
 import AdminDashboard from '@/components/admin/AdminDashboard';
@@ -19,7 +18,6 @@ export default function AdminPanel() {
   const [seccion, setSeccion] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // Datos compartidos
   const [propiedades, setPropiedades] = useState([]);
   const [reservas, setReservas] = useState([]);
   const [tickets, setTickets] = useState([]);
@@ -27,6 +25,28 @@ export default function AdminPanel() {
   const [usuarios, setUsuarios] = useState([]);
 
   const router = useRouter();
+
+  const cargarTodo = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [props, revs, ticks, tars, usrs] = await Promise.all([
+        firestoreGetAll('propiedades'),
+        firestoreGetAll('reservas'),
+        firestoreGetAll('tickets-soporte'),
+        firestoreGetAll('tareas'),
+        firestoreGetAll('users'),
+      ]);
+      setPropiedades(props);
+      setReservas(revs);
+      setTickets(ticks);
+      setTareas(tars);
+      setUsuarios(usrs);
+    } catch (error) {
+      console.error('Error cargando datos admin:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((currentUser) => {
@@ -36,29 +56,7 @@ export default function AdminPanel() {
       cargarTodo();
     });
     return () => unsubscribe();
-  }, [router]);
-
-  const cargarTodo = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [propSnap, resSnap, tickSnap, tarSnap, usrSnap] = await Promise.all([
-        getDocs(collection(db, 'propiedades')),
-        getDocs(collection(db, 'reservas')),
-        getDocs(collection(db, 'tickets-soporte')),
-        getDocs(collection(db, 'tareas')),
-        getDocs(collection(db, 'users')),
-      ]);
-      setPropiedades(propSnap.docs.map(d => ({ id: d.id, ...d.data() })));
-      setReservas(resSnap.docs.map(d => ({ id: d.id, ...d.data() })));
-      setTickets(tickSnap.docs.map(d => ({ id: d.id, ...d.data() })));
-      setTareas(tarSnap.docs.map(d => ({ id: d.id, ...d.data() })));
-      setUsuarios(usrSnap.docs.map(d => ({ id: d.id, ...d.data() })));
-    } catch (error) {
-      console.error('Error cargando datos:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  }, [router, cargarTodo]);
 
   const menuItems = [
     { key: 'dashboard', icon: '📊', label: 'Dashboard' },
@@ -85,12 +83,11 @@ export default function AdminPanel() {
 
   return (
     <div className={styles.adminLayout}>
-      {/* ---- SIDEBAR ---- */}
       {sidebarOpen && (
         <div className={styles.sidebarOverlay} onClick={() => setSidebarOpen(false)} />
       )}
+
       <aside className={`${styles.sidebar} ${sidebarOpen ? styles.sidebarOpen : ''}`}>
-        {/* Logo */}
         <div className={styles.sidebarHeader}>
           <button onClick={() => router.push('/')} className={styles.sidebarLogo}>
             <svg width="28" height="28" viewBox="0 0 40 40" fill="none">
@@ -103,7 +100,6 @@ export default function AdminPanel() {
           <span className={styles.sidebarBadge}>Admin</span>
         </div>
 
-        {/* Menú */}
         <nav className={styles.sidebarNav}>
           {menuItems.map((item) => (
             <button
@@ -120,7 +116,6 @@ export default function AdminPanel() {
           ))}
         </nav>
 
-        {/* Footer sidebar */}
         <div className={styles.sidebarFooter}>
           <div className={styles.sidebarUser}>
             {user?.photoURL ? (
@@ -138,69 +133,40 @@ export default function AdminPanel() {
         </div>
       </aside>
 
-      {/* ---- MAIN CONTENT ---- */}
       <main className={styles.mainContent}>
-        {/* Top bar mobile */}
         <div className={styles.topBar}>
-          <button
-            onClick={() => setSidebarOpen(true)}
-            className={styles.menuToggle}
-            aria-label="Abrir menú"
-          >
+          <button onClick={() => setSidebarOpen(true)} className={styles.menuToggle} aria-label="Abrir menú">
             <span></span><span></span><span></span>
           </button>
           <h1 className={styles.topBarTitle}>
             {menuItems.find(m => m.key === seccion)?.icon}{' '}
             {menuItems.find(m => m.key === seccion)?.label}
           </h1>
-          <button onClick={cargarTodo} className={styles.refreshBtn} aria-label="Actualizar">
-            🔄
-          </button>
+          <button onClick={cargarTodo} className={styles.refreshBtn} aria-label="Actualizar">🔄</button>
         </div>
 
-        {/* Contenido dinámico */}
         <div className={styles.contentArea}>
           {seccion === 'dashboard' && (
             <AdminDashboard
-              propiedades={propiedades}
-              reservas={reservas}
-              tickets={tickets}
-              tareas={tareas}
-              usuarios={usuarios}
+              propiedades={propiedades} reservas={reservas}
+              tickets={tickets} tareas={tareas} usuarios={usuarios}
               onNavigate={setSeccion}
             />
           )}
           {seccion === 'propiedades' && (
-            <AdminPropiedades
-              propiedades={propiedades}
-              onRefresh={cargarTodo}
-            />
+            <AdminPropiedades propiedades={propiedades} onRefresh={cargarTodo} />
           )}
           {seccion === 'calendario' && (
-            <AdminCalendario
-              propiedades={propiedades}
-              reservas={reservas}
-              onRefresh={cargarTodo}
-            />
+            <AdminCalendario propiedades={propiedades} reservas={reservas} onRefresh={cargarTodo} />
           )}
           {seccion === 'tareas' && (
-            <AdminTareas
-              tareas={tareas}
-              propiedades={propiedades}
-              onRefresh={cargarTodo}
-            />
+            <AdminTareas tareas={tareas} propiedades={propiedades} onRefresh={cargarTodo} />
           )}
           {seccion === 'tickets' && (
-            <AdminTickets
-              tickets={tickets}
-              onRefresh={cargarTodo}
-            />
+            <AdminTickets tickets={tickets} onRefresh={cargarTodo} />
           )}
           {seccion === 'usuarios' && (
-            <AdminUsuarios
-              usuarios={usuarios}
-              propiedades={propiedades}
-            />
+            <AdminUsuarios usuarios={usuarios} propiedades={propiedades} />
           )}
         </div>
       </main>

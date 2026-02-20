@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { auth, storage, firestoreGetCollection, firestoreUpdate, firestoreAdd } from '@/lib/firebase'
+import { auth, storage, firestoreGet, firestoreSet, firestoreUpdate } from '@/lib/firebase'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { updatePassword, updateProfile } from 'firebase/auth'
 import ProtectedRoute from '@/components/ProtectedRoute'
@@ -22,32 +22,31 @@ function PerfilContenido() {
   useEffect(() => { loadUserData() }, [])
 
   const showToast = (msg, type = 'success') => {
-    setToast(msg); setToastType(type);
+    setToast(msg)
+    setToastType(type)
     setTimeout(() => setToast(''), 4000)
   }
 
   const loadUserData = async () => {
     if (!auth.currentUser) return
     try {
-      // Usamos REST para leer el documento del usuario
-      const users = await firestoreGetCollection('users', 'id', auth.currentUser.uid);
-      
-      if (users.length > 0) {
-        setUserData(users[0])
-      } else {
-        const initial = {
-          id: auth.currentUser.uid,
-          displayName: auth.currentUser.displayName || '',
-          email: auth.currentUser.email || '',
-          phone: '', location: '', bio: '',
-          photoURL: auth.currentUser.photoURL || ''
-        }
-        setUserData(initial)
-        // Creamos si no existe
-        await firestoreAdd('users', { ...initial, createdAt: new Date().toISOString() })
+      const data = await firestoreGet('users', auth.currentUser.uid)
+      setUserData(data)
+    } catch {
+      // Documento no existe aún — usar datos de auth
+      const initial = {
+        displayName: auth.currentUser.displayName || '',
+        email: auth.currentUser.email || '',
+        phone: '', location: '', bio: '',
+        photoURL: auth.currentUser.photoURL || '',
+        createdAt: new Date().toISOString(),
       }
-    } catch (error) {
-      console.error('Error cargando perfil:', error)
+      setUserData(initial)
+      try {
+        await firestoreSet('users', auth.currentUser.uid, initial)
+      } catch (e) {
+        console.error('Error creando perfil inicial:', e)
+      }
     }
   }
 
@@ -64,12 +63,7 @@ function PerfilContenido() {
       await uploadBytes(storageRef, file)
       const photoURL = await getDownloadURL(storageRef)
       await updateProfile(auth.currentUser, { photoURL })
-
-      await firestoreUpdate('users', auth.currentUser.uid, { 
-        photoURL, 
-        updatedAt: new Date().toISOString() 
-      })
-
+      await firestoreUpdate('users', auth.currentUser.uid, { photoURL, updatedAt: new Date().toISOString() })
       setUserData(prev => ({ ...prev, photoURL }))
       showToast('✅ Foto actualizada correctamente')
     } catch (error) {
@@ -83,24 +77,20 @@ function PerfilContenido() {
   const handleSaveProfile = async (e) => {
     e.preventDefault()
     setSaving(true)
-
     try {
       if (userData.displayName !== auth.currentUser.displayName) {
         await updateProfile(auth.currentUser, { displayName: userData.displayName })
       }
-
       const dataToSave = {
-        displayName: userData.displayName,
-        email: userData.email,
+        displayName: userData.displayName || '',
+        email: userData.email || '',
         phone: userData.phone || '',
         location: userData.location || '',
         bio: userData.bio || '',
         photoURL: userData.photoURL || '',
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
       }
-
-      await firestoreUpdate('users', auth.currentUser.uid, dataToSave)
-
+      await firestoreSet('users', auth.currentUser.uid, dataToSave)
       showToast('✅ Perfil guardado correctamente')
     } catch (error) {
       console.error('Error:', error)
@@ -114,16 +104,22 @@ function PerfilContenido() {
     e.preventDefault()
     if (newPassword.length < 6) { showToast('Mínimo 6 caracteres', 'error'); return }
     if (newPassword !== confirmPassword) { showToast('No coinciden', 'error'); return }
-
     setSavingPassword(true)
     try {
       await updatePassword(auth.currentUser, newPassword)
       showToast('✅ Contraseña actualizada')
-      setNewPassword(''); setConfirmPassword('')
+      setNewPassword('')
+      setConfirmPassword('')
     } catch (error) {
-      showToast(error.code === 'auth/requires-recent-login'
-        ? 'Cerrá sesión y volvé a iniciar antes de cambiar contraseña' : `Error: ${error.message}`, 'error')
-    } finally { setSavingPassword(false) }
+      showToast(
+        error.code === 'auth/requires-recent-login'
+          ? 'Cerrá sesión y volvé a iniciar antes de cambiar contraseña'
+          : `Error: ${error.message}`,
+        'error'
+      )
+    } finally {
+      setSavingPassword(false)
+    }
   }
 
   const getInitials = () => userData.displayName ? userData.displayName.charAt(0).toUpperCase() : 'U'
@@ -146,7 +142,9 @@ function PerfilContenido() {
       <div className={styles.container}>
         <div className={styles.photoSection}>
           <div className={styles.photo}>
-            {userData.photoURL ? <img src={userData.photoURL} alt="Perfil" /> : <div className={styles.initials}>{getInitials()}</div>}
+            {userData.photoURL
+              ? <img src={userData.photoURL} alt="Perfil" />
+              : <div className={styles.initials}>{getInitials()}</div>}
           </div>
           <div>
             <label htmlFor="photo-upload" className={styles.btnPhoto}>
@@ -160,30 +158,47 @@ function PerfilContenido() {
         <div className={styles.section}>
           <h3>Información Personal</h3>
           <form onSubmit={handleSaveProfile}>
-            <div className={styles.formGroup}><label>Nombre completo *</label>
-              <input type="text" name="displayName" value={userData.displayName} onChange={handleChange} required /></div>
-            <div className={styles.formGroup}><label>Correo electrónico</label>
-              <input type="email" value={userData.email} disabled /><p className={styles.hint}>No se puede cambiar</p></div>
-            <div className={styles.formGroup}><label>Teléfono</label>
-              <input type="tel" name="phone" value={userData.phone} onChange={handleChange} placeholder="+598 99 123 456" /></div>
-            <div className={styles.formGroup}><label>Ubicación</label>
-              <input type="text" name="location" value={userData.location} onChange={handleChange} placeholder="Montevideo, Uruguay" /></div>
-            <div className={styles.formGroup}><label>Sobre mí</label>
-              <textarea name="bio" value={userData.bio} onChange={handleChange} rows="4" placeholder="Contanos sobre vos..." /></div>
+            <div className={styles.formGroup}>
+              <label>Nombre completo *</label>
+              <input type="text" name="displayName" value={userData.displayName} onChange={handleChange} required />
+            </div>
+            <div className={styles.formGroup}>
+              <label>Correo electrónico</label>
+              <input type="email" value={userData.email} disabled />
+              <p className={styles.hint}>No se puede cambiar</p>
+            </div>
+            <div className={styles.formGroup}>
+              <label>Teléfono</label>
+              <input type="tel" name="phone" value={userData.phone} onChange={handleChange} placeholder="+598 99 123 456" />
+            </div>
+            <div className={styles.formGroup}>
+              <label>Ubicación</label>
+              <input type="text" name="location" value={userData.location} onChange={handleChange} placeholder="Montevideo, Uruguay" />
+            </div>
+            <div className={styles.formGroup}>
+              <label>Sobre mí</label>
+              <textarea name="bio" value={userData.bio} onChange={handleChange} rows="4" placeholder="Contanos sobre vos..." />
+            </div>
             <button type="submit" className={styles.btnSave} disabled={saving}>
-              {saving ? '⏳ Guardando...' : '💾 Guardar Cambios'}</button>
+              {saving ? '⏳ Guardando...' : '💾 Guardar Cambios'}
+            </button>
           </form>
         </div>
 
         <div className={styles.section}>
           <h3>Cambiar Contraseña</h3>
           <form onSubmit={handleChangePassword}>
-            <div className={styles.formGroup}><label>Nueva contraseña</label>
-              <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Mínimo 6 caracteres" /></div>
-            <div className={styles.formGroup}><label>Confirmar</label>
-              <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Repetí la contraseña" /></div>
+            <div className={styles.formGroup}>
+              <label>Nueva contraseña</label>
+              <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Mínimo 6 caracteres" />
+            </div>
+            <div className={styles.formGroup}>
+              <label>Confirmar</label>
+              <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Repetí la contraseña" />
+            </div>
             <button type="submit" className={styles.btnSave} disabled={savingPassword}>
-              {savingPassword ? '⏳ Cambiando...' : '🔒 Cambiar Contraseña'}</button>
+              {savingPassword ? '⏳ Cambiando...' : '🔒 Cambiar Contraseña'}
+            </button>
           </form>
         </div>
       </div>

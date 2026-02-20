@@ -8,12 +8,8 @@ export default function AdminTareas({ tareas, propiedades, onRefresh }) {
   const [showModal, setShowModal] = useState(false);
   const [filtroEstado, setFiltroEstado] = useState('pendientes');
   const [nuevaTarea, setNuevaTarea] = useState({
-    titulo: '',
-    tipo: 'limpieza',
-    propiedadId: '',
-    prioridad: 'media',
-    descripcion: '',
-    fechaLimite: ''
+    titulo: '', tipo: 'limpieza', propiedadId: '',
+    prioridad: 'media', descripcion: '', fechaLimite: ''
   });
 
   const tipos = {
@@ -29,8 +25,8 @@ export default function AdminTareas({ tareas, propiedades, onRefresh }) {
     if (filtroEstado === 'completadas') return t.estado === 'completada';
     return true;
   }).sort((a, b) => {
-    const prioridadOrden = { alta: 0, media: 1, baja: 2 };
-    return (prioridadOrden[a.prioridad] || 1) - (prioridadOrden[b.prioridad] || 1);
+    const orden = { alta: 0, media: 1, baja: 2 };
+    return (orden[a.prioridad] || 1) - (orden[b.prioridad] || 1);
   });
 
   const crearTarea = async (e) => {
@@ -41,13 +37,13 @@ export default function AdminTareas({ tareas, propiedades, onRefresh }) {
         ...nuevaTarea,
         propiedadNombre: propNombre,
         estado: 'pendiente',
-        fechaCreacion: new Date().toISOString()
+        fechaCreacion: new Date().toISOString(),
       });
       setShowModal(false);
       setNuevaTarea({ titulo: '', tipo: 'limpieza', propiedadId: '', prioridad: 'media', descripcion: '', fechaLimite: '' });
       onRefresh();
     } catch (error) {
-      alert('Error al crear tarea');
+      alert('Error al crear tarea: ' + error.message);
     }
   };
 
@@ -59,7 +55,7 @@ export default function AdminTareas({ tareas, propiedades, onRefresh }) {
       });
       onRefresh();
     } catch (error) {
-      alert('Error al actualizar');
+      alert('Error al actualizar: ' + error.message);
     }
   };
 
@@ -69,7 +65,7 @@ export default function AdminTareas({ tareas, propiedades, onRefresh }) {
       await firestoreDelete('tareas', id);
       onRefresh();
     } catch (error) {
-      alert('Error al eliminar');
+      alert('Error al eliminar: ' + error.message);
     }
   };
 
@@ -88,11 +84,7 @@ export default function AdminTareas({ tareas, propiedades, onRefresh }) {
         <div className={styles.panelHeader}>
           <h2 className={styles.panelTitle}>🧹 Gestión de Tareas ({filtradas.length})</h2>
           <div className={styles.filterBar}>
-            <select
-              value={filtroEstado}
-              onChange={(e) => setFiltroEstado(e.target.value)}
-              className={styles.filterSelect}
-            >
+            <select value={filtroEstado} onChange={(e) => setFiltroEstado(e.target.value)} className={styles.filterSelect}>
               <option value="pendientes">Pendientes</option>
               <option value="completadas">Completadas</option>
               <option value="todas">Todas</option>
@@ -117,43 +109,25 @@ export default function AdminTareas({ tareas, propiedades, onRefresh }) {
                   <h3 className={styles.itemTitle}>
                     {tipos[tarea.tipo] || '📦'} {tarea.titulo}
                   </h3>
-                  {tarea.propiedadNombre && (
-                    <p className={styles.itemDetail}>🏠 {tarea.propiedadNombre}</p>
-                  )}
-                  {tarea.descripcion && (
-                    <p className={styles.itemDetail}>{tarea.descripcion}</p>
-                  )}
-                  {tarea.fechaLimite && (
-                    <p className={styles.itemDetail}>📅 Límite: {tarea.fechaLimite}</p>
-                  )}
+                  {tarea.propiedadNombre && <p className={styles.itemDetail}>🏠 {tarea.propiedadNombre}</p>}
+                  {tarea.descripcion && <p className={styles.itemDetail}>{tarea.descripcion}</p>}
+                  {tarea.fechaLimite && <p className={styles.itemDetail}>📅 Límite: {tarea.fechaLimite}</p>}
                   <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.4rem', flexWrap: 'wrap' }}>
-                    <span className={`${styles.badge} ${
-                      tarea.prioridad === 'alta' ? styles.badgeRed :
-                      tarea.prioridad === 'media' ? styles.badgeYellow : styles.badgeBlue
-                    }`}>
+                    <span className={`${styles.badge} ${tarea.prioridad === 'alta' ? styles.badgeRed : tarea.prioridad === 'media' ? styles.badgeYellow : styles.badgeBlue}`}>
                       {tarea.prioridad}
                     </span>
-                    <span className={`${styles.badge} ${
-                      tarea.estado === 'completada' ? styles.badgeGreen :
-                      tarea.estado === 'en-proceso' ? styles.badgeBlue : styles.badgeYellow
-                    }`}>
+                    <span className={`${styles.badge} ${tarea.estado === 'completada' ? styles.badgeGreen : tarea.estado === 'en-proceso' ? styles.badgeBlue : styles.badgeYellow}`}>
                       {tarea.estado}
                     </span>
                   </div>
                 </div>
                 <div className={styles.itemActions}>
-                  <select
-                    value={tarea.estado}
-                    onChange={(e) => cambiarEstado(tarea.id, e.target.value)}
-                    className={styles.selectEstado}
-                  >
+                  <select value={tarea.estado} onChange={(e) => cambiarEstado(tarea.id, e.target.value)} className={styles.selectEstado}>
                     <option value="pendiente">Pendiente</option>
                     <option value="en-proceso">En proceso</option>
                     <option value="completada">Completada</option>
                   </select>
-                  <button onClick={() => eliminarTarea(tarea.id)} className={styles.btnDanger}>
-                    🗑️
-                  </button>
+                  <button onClick={() => eliminarTarea(tarea.id)} className={styles.btnDanger}>🗑️</button>
                 </div>
               </div>
             ))
@@ -161,7 +135,6 @@ export default function AdminTareas({ tareas, propiedades, onRefresh }) {
         </div>
       </div>
 
-      {/* Modal crear tarea */}
       {showModal && (
         <div className={styles.modalOverlay} onClick={() => setShowModal(false)}>
           <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
@@ -173,20 +146,14 @@ export default function AdminTareas({ tareas, propiedades, onRefresh }) {
               <div className={styles.modalBody}>
                 <div className={styles.formGroup}>
                   <label>Título *</label>
-                  <input
-                    type="text" required
-                    value={nuevaTarea.titulo}
+                  <input type="text" required value={nuevaTarea.titulo}
                     onChange={(e) => setNuevaTarea({ ...nuevaTarea, titulo: e.target.value })}
-                    placeholder="Ej: Limpieza post check-out"
-                  />
+                    placeholder="Ej: Limpieza post check-out" />
                 </div>
                 <div className={styles.formRow}>
                   <div className={styles.formGroup}>
                     <label>Tipo</label>
-                    <select
-                      value={nuevaTarea.tipo}
-                      onChange={(e) => setNuevaTarea({ ...nuevaTarea, tipo: e.target.value })}
-                    >
+                    <select value={nuevaTarea.tipo} onChange={(e) => setNuevaTarea({ ...nuevaTarea, tipo: e.target.value })}>
                       {Object.entries(tipos).map(([key, label]) => (
                         <option key={key} value={key}>{label}</option>
                       ))}
@@ -194,10 +161,7 @@ export default function AdminTareas({ tareas, propiedades, onRefresh }) {
                   </div>
                   <div className={styles.formGroup}>
                     <label>Prioridad</label>
-                    <select
-                      value={nuevaTarea.prioridad}
-                      onChange={(e) => setNuevaTarea({ ...nuevaTarea, prioridad: e.target.value })}
-                    >
+                    <select value={nuevaTarea.prioridad} onChange={(e) => setNuevaTarea({ ...nuevaTarea, prioridad: e.target.value })}>
                       <option value="baja">🔵 Baja</option>
                       <option value="media">🟡 Media</option>
                       <option value="alta">🔴 Alta</option>
@@ -206,10 +170,7 @@ export default function AdminTareas({ tareas, propiedades, onRefresh }) {
                 </div>
                 <div className={styles.formGroup}>
                   <label>Propiedad</label>
-                  <select
-                    value={nuevaTarea.propiedadId}
-                    onChange={(e) => setNuevaTarea({ ...nuevaTarea, propiedadId: e.target.value })}
-                  >
+                  <select value={nuevaTarea.propiedadId} onChange={(e) => setNuevaTarea({ ...nuevaTarea, propiedadId: e.target.value })}>
                     <option value="">— General (sin propiedad) —</option>
                     {propiedades.map(p => (
                       <option key={p.id} value={p.id}>{p.titulo}</option>
@@ -218,29 +179,19 @@ export default function AdminTareas({ tareas, propiedades, onRefresh }) {
                 </div>
                 <div className={styles.formGroup}>
                   <label>Fecha límite</label>
-                  <input
-                    type="date"
-                    value={nuevaTarea.fechaLimite}
-                    onChange={(e) => setNuevaTarea({ ...nuevaTarea, fechaLimite: e.target.value })}
-                  />
+                  <input type="date" value={nuevaTarea.fechaLimite}
+                    onChange={(e) => setNuevaTarea({ ...nuevaTarea, fechaLimite: e.target.value })} />
                 </div>
                 <div className={styles.formGroup}>
                   <label>Descripción</label>
-                  <textarea
-                    rows="3"
-                    value={nuevaTarea.descripcion}
+                  <textarea rows="3" value={nuevaTarea.descripcion}
                     onChange={(e) => setNuevaTarea({ ...nuevaTarea, descripcion: e.target.value })}
-                    placeholder="Detalles adicionales..."
-                  />
+                    placeholder="Detalles adicionales..." />
                 </div>
               </div>
               <div className={styles.modalFooter}>
-                <button type="button" onClick={() => setShowModal(false)} className={styles.btnOutline}>
-                  Cancelar
-                </button>
-                <button type="submit" className={styles.btnAccent}>
-                  Crear tarea
-                </button>
+                <button type="button" onClick={() => setShowModal(false)} className={styles.btnOutline}>Cancelar</button>
+                <button type="submit" className={styles.btnAccent}>Crear tarea</button>
               </div>
             </form>
           </div>

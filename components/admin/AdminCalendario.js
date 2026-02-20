@@ -23,7 +23,6 @@ export default function AdminCalendario({ propiedades, reservas, onRefresh }) {
   const mesAnterior = () => setMesActual(new Date(year, month - 1, 1));
   const mesSiguiente = () => setMesActual(new Date(year, month + 1, 1));
 
-  // Obtener fechas ocupadas de la propiedad seleccionada
   const prop = propiedades.find(p => p.id === propSeleccionada);
   const fechasOcupadas = prop?.fechasOcupadas || [];
 
@@ -32,29 +31,24 @@ export default function AdminCalendario({ propiedades, reservas, onRefresh }) {
     return fechasOcupadas.includes(fecha);
   };
 
-  const esHoy = (dia) => {
-    return hoy.getFullYear() === year && hoy.getMonth() === month && hoy.getDate() === dia;
-  };
+  const esHoy = (dia) =>
+    hoy.getFullYear() === year && hoy.getMonth() === month && hoy.getDate() === dia;
 
   const toggleFecha = async (dia) => {
     if (!propSeleccionada) return;
     const fecha = `${year}-${String(month + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
-
     const nuevasFechas = esFechaOcupada(dia)
       ? fechasOcupadas.filter(f => f !== fecha)
       : [...fechasOcupadas, fecha];
 
     try {
-      await firestoreUpdate('propiedades', propSeleccionada, {
-        fechasOcupadas: nuevasFechas
-      });
+      await firestoreUpdate('propiedades', propSeleccionada, { fechasOcupadas: nuevasFechas });
       onRefresh();
     } catch (error) {
-      alert('Error al actualizar fecha');
+      alert('Error al actualizar fecha: ' + error.message);
     }
   };
 
-  // Generar celdas del calendario
   const celdas = [];
   for (let i = 0; i < primerDia; i++) {
     celdas.push(<div key={`empty-${i}`} className={`${styles.calDay} ${styles.calDayEmpty}`} />);
@@ -77,7 +71,6 @@ export default function AdminCalendario({ propiedades, reservas, onRefresh }) {
 
   return (
     <>
-      {/* Selector de propiedad */}
       <div className={styles.panel}>
         <div className={styles.panelHeader}>
           <h2 className={styles.panelTitle}>📅 Calendario de Disponibilidad</h2>
@@ -93,9 +86,7 @@ export default function AdminCalendario({ propiedades, reservas, onRefresh }) {
             >
               <option value="">— Elegí una propiedad —</option>
               {propDisponibles.map(p => (
-                <option key={p.id} value={p.id}>
-                  {p.titulo} — {p.ubicacion}
-                </option>
+                <option key={p.id} value={p.id}>{p.titulo} — {p.ubicacion}</option>
               ))}
             </select>
           </div>
@@ -107,23 +98,14 @@ export default function AdminCalendario({ propiedades, reservas, onRefresh }) {
             </div>
           ) : (
             <>
-              {/* Navegación del mes */}
-              <div style={{
-                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                marginBottom: '1rem', padding: '0.5rem 0'
-              }}>
-                <button onClick={mesAnterior} className={styles.btnOutline} style={{ minWidth: 'auto' }}>
-                  ← Anterior
-                </button>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', padding: '0.5rem 0' }}>
+                <button onClick={mesAnterior} className={styles.btnOutline} style={{ minWidth: 'auto' }}>← Anterior</button>
                 <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--color-primary)' }}>
                   {meses[month]} {year}
                 </h3>
-                <button onClick={mesSiguiente} className={styles.btnOutline} style={{ minWidth: 'auto' }}>
-                  Siguiente →
-                </button>
+                <button onClick={mesSiguiente} className={styles.btnOutline} style={{ minWidth: 'auto' }}>Siguiente →</button>
               </div>
 
-              {/* Grilla */}
               <div className={styles.calGrid}>
                 {diasSemana.map(d => (
                   <div key={d} className={styles.calHeader}>{d}</div>
@@ -131,7 +113,6 @@ export default function AdminCalendario({ propiedades, reservas, onRefresh }) {
                 {celdas}
               </div>
 
-              {/* Leyenda */}
               <div className={styles.calLegend}>
                 <div className={styles.calLegendItem}>
                   <div className={styles.calLegendDot} style={{ background: 'white', border: '1px solid #ccc' }} />
@@ -148,8 +129,7 @@ export default function AdminCalendario({ propiedades, reservas, onRefresh }) {
               </div>
 
               <p style={{ marginTop: '1rem', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
-                💡 Hacé clic en un día para marcarlo como ocupado/disponible.
-                Las fechas se guardan automáticamente.
+                💡 Hacé clic en un día para marcarlo como ocupado/disponible. Las fechas se guardan automáticamente.
               </p>
             </>
           )}

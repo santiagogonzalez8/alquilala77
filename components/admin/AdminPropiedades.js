@@ -23,7 +23,7 @@ export default function AdminPropiedades({ propiedades, onRefresh }) {
       await firestoreUpdate('propiedades', id, { estado: nuevoEstado });
       onRefresh();
     } catch (error) {
-      alert('Error al actualizar');
+      alert('Error al actualizar: ' + error.message);
     }
   };
 
@@ -33,7 +33,7 @@ export default function AdminPropiedades({ propiedades, onRefresh }) {
       await firestoreDelete('propiedades', id);
       onRefresh();
     } catch (error) {
-      alert('Error al eliminar');
+      alert('Error al eliminar: ' + error.message);
     }
   };
 
@@ -49,7 +49,6 @@ export default function AdminPropiedades({ propiedades, onRefresh }) {
 
   return (
     <>
-      {/* Filtros */}
       <div className={styles.panel}>
         <div className={styles.panelHeader}>
           <h2 className={styles.panelTitle}>🏠 Gestión de Propiedades ({filtradas.length})</h2>
@@ -91,13 +90,8 @@ export default function AdminPropiedades({ propiedades, onRefresh }) {
                   onClick={() => setExpandido(expandido === prop.id ? null : prop.id)}
                 >
                   <div className={styles.itemInfo} style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
-                    {/* Thumbnail */}
                     {(prop.imagenes?.[0] || prop.fotoPrincipal) && (
-                      <img
-                        src={prop.imagenes?.[0] || prop.fotoPrincipal}
-                        alt=""
-                        className={styles.photoThumb}
-                      />
+                      <img src={prop.imagenes?.[0] || prop.fotoPrincipal} alt="" className={styles.photoThumb} />
                     )}
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <h3 className={styles.itemTitle}>{prop.titulo}</h3>
@@ -128,16 +122,12 @@ export default function AdminPropiedades({ propiedades, onRefresh }) {
                   </div>
                 </div>
 
-                {/* Detalle expandido */}
                 {expandido === prop.id && (
                   <div style={{
-                    background: '#f8f9fa',
-                    padding: '1.25rem',
-                    marginTop: '-0.75rem',
-                    marginBottom: '0.75rem',
+                    background: '#f8f9fa', padding: '1.25rem',
+                    marginTop: '-0.75rem', marginBottom: '0.75rem',
                     borderRadius: '0 0 8px 8px',
-                    border: '1px solid var(--color-border-light)',
-                    borderTop: 'none'
+                    border: '1px solid var(--color-border-light)', borderTop: 'none'
                   }}>
                     {prop.descripcion && (
                       <div style={{ marginBottom: '1rem' }}>
@@ -147,7 +137,6 @@ export default function AdminPropiedades({ propiedades, onRefresh }) {
                         </p>
                       </div>
                     )}
-
                     {prop.amenities?.length > 0 && (
                       <div style={{ marginBottom: '1rem' }}>
                         <strong style={{ color: 'var(--color-primary)', fontSize: '0.85rem' }}>Amenidades:</strong>
@@ -161,7 +150,6 @@ export default function AdminPropiedades({ propiedades, onRefresh }) {
                         </div>
                       </div>
                     )}
-
                     {prop.imagenes?.length > 0 && (
                       <div>
                         <strong style={{ color: 'var(--color-primary)', fontSize: '0.85rem' }}>
@@ -176,11 +164,9 @@ export default function AdminPropiedades({ propiedades, onRefresh }) {
                         </div>
                       </div>
                     )}
-
                     <div style={{ marginTop: '1rem', fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
                       📅 Publicada: {prop.fechaPublicacion ? new Date(prop.fechaPublicacion).toLocaleDateString('es-UY') : 'N/A'}
                       {' • '} Tipo: {prop.tipoPropiedad || 'N/A'}
-                      {' • '} Temporada: {prop.temporada || 'N/A'}
                     </div>
                   </div>
                 )}
