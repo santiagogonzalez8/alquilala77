@@ -3,12 +3,11 @@
 import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { auth, db } from '@/lib/firebase'
-import { collection, getDocs, query, where, limit } from 'firebase/firestore'
+import { auth } from '@/lib/firebase'
+import { firestoreGetPublic } from '@/lib/firebase'
 import { isAdmin } from '@/lib/adminConfig'
 import styles from './page.module.css'
 
-// Hook para detectar cuando un elemento entra al viewport
 function useOnScreen(ref, threshold = 0.15) {
   const [isVisible, setIsVisible] = useState(false)
   useEffect(() => {
@@ -72,10 +71,15 @@ export default function Home() {
   useEffect(() => {
     const cargarPropiedades = async () => {
       try {
-        const q = query(collection(db, 'propiedades'), where('estado', '==', 'disponible'), limit(6))
-        const snapshot = await getDocs(q)
-        setPropiedades(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })))
-      } catch (error) { console.error('Error cargando propiedades:', error) }
+        const props = await firestoreGetPublic(
+          'propiedades',
+          [{ field: 'estado', op: 'EQUAL', value: 'disponible' }],
+          6
+        )
+        setPropiedades(props)
+      } catch (error) {
+        console.error('Error cargando propiedades:', error)
+      }
     }
     cargarPropiedades()
   }, [])
@@ -104,7 +108,11 @@ export default function Home() {
       {/* HERO */}
       <section className={styles.hero}>
         {slides.map((slide, index) => (
-          <div key={index} className={styles.heroSlide} style={{ backgroundImage: `url(${slide.image})`, backgroundPosition: slide.position || 'center', opacity: currentSlide === index ? 1 : 0 }} />
+          <div key={index} className={styles.heroSlide} style={{
+            backgroundImage: `url(${slide.image})`,
+            backgroundPosition: slide.position || 'center',
+            opacity: currentSlide === index ? 1 : 0
+          }} />
         ))}
         <div className={styles.heroOverlay} />
         <div className={styles.slideName}>📍 {slides[currentSlide].name}</div>
@@ -123,7 +131,9 @@ export default function Home() {
 
         <div className={styles.heroDots}>
           {slides.map((_, index) => (
-            <button key={index} onClick={() => setCurrentSlide(index)} className={`${styles.dot} ${currentSlide === index ? styles.dotActive : ''}`} aria-label={`Slide ${index + 1}`} />
+            <button key={index} onClick={() => setCurrentSlide(index)}
+              className={`${styles.dot} ${currentSlide === index ? styles.dotActive : ''}`}
+              aria-label={`Slide ${index + 1}`} />
           ))}
         </div>
       </section>
@@ -191,8 +201,17 @@ export default function Home() {
           {propiedades.length > 0 ? (
             <StaggerGrid className={styles.propiedadesGrid}>
               {propiedades.map((prop) => (
-                <div key={prop.id} className={styles.propiedadCard}>
-                  <div className={styles.propiedadImagen} style={{ backgroundImage: prop.imagenes?.[0] ? `url(${prop.imagenes[0]})` : prop.fotoPrincipal ? `url(${prop.fotoPrincipal})` : 'linear-gradient(135deg, #1e3a5f, #2d4a6f)' }}>
+                <Link key={prop.id} href={`/propiedades/${prop.id}`} className={styles.propiedadCard}>
+                  <div
+                    className={styles.propiedadImagen}
+                    style={{
+                      backgroundImage: prop.imagenes?.[0]
+                        ? `url(${prop.imagenes[0]})`
+                        : prop.fotoPrincipal
+                        ? `url(${prop.fotoPrincipal})`
+                        : 'linear-gradient(135deg, #1e3a5f, #2d4a6f)'
+                    }}
+                  >
                     <span className={styles.propiedadBadge}>Disponible</span>
                   </div>
                   <div className={styles.propiedadInfo}>
@@ -201,13 +220,14 @@ export default function Home() {
                     <div className={styles.propiedadDetalles}>
                       <span>👥 {prop.huespedes} huéspedes</span>
                       <span>🛏️ {prop.dormitorios} dorm.</span>
+                      <span>🚿 {prop.banos} baños</span>
                     </div>
                     <div className={styles.propiedadPrecio}>
                       <span className={styles.precioValor}>${prop.precioPorNoche}</span>
                       <span className={styles.precioNoche}>/ noche</span>
                     </div>
                   </div>
-                </div>
+                </Link>
               ))}
             </StaggerGrid>
           ) : (
@@ -216,7 +236,9 @@ export default function Home() {
                 <div className={styles.emptyIcon}>🏡</div>
                 <h3>Próximamente</h3>
                 <p>Estamos incorporando propiedades. ¡Sé el primero en publicar la tuya!</p>
-                <Link href={user ? '/publicar' : '/login'} className={styles.ctaPrimary}>Publicá tu propiedad</Link>
+                <Link href={user ? '/publicar' : '/login'} className={styles.ctaPrimary}>
+                  Publicá tu propiedad
+                </Link>
               </div>
             </AnimatedSection>
           )}
@@ -230,8 +252,16 @@ export default function Home() {
             <h2 className={styles.ctaTitulo}>¿Tenés una propiedad sin explotar?</h2>
             <p className={styles.ctaSubtitulo}>Dejanos encargarnos de todo. Empezá a generar ingresos con tu casa hoy mismo.</p>
             <div className={styles.ctaButtons}>
-              <Link href={user ? '/publicar' : '/login'} className={styles.ctaPrimaryLarge}>Quiero publicar mi casa</Link>
-              <a href="https://wa.me/59895532294?text=Hola!%20Quiero%20información%20sobre%20el%20servicio%20de%20gestión%20de%20alquileres" target="_blank" rel="noopener noreferrer" className={styles.ctaWhatsapp}>💬 Hablemos por WhatsApp</a>
+              <Link href={user ? '/publicar' : '/login'} className={styles.ctaPrimaryLarge}>
+                Quiero publicar mi casa
+              </Link>
+              <a
+                href="https://wa.me/59895532294?text=Hola!%20Quiero%20información%20sobre%20el%20servicio%20de%20gestión%20de%20alquileres"
+                target="_blank" rel="noopener noreferrer"
+                className={styles.ctaWhatsapp}
+              >
+                💬 Hablemos por WhatsApp
+              </a>
             </div>
           </AnimatedSection>
         </div>

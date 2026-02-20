@@ -1,0 +1,610 @@
+/* ============================================================
+   PROPIEDAD DETALLE
+   ============================================================ */
+
+.page {
+  padding-top: var(--navbar-height);
+  min-height: 100vh;
+  background: var(--color-bg-white);
+}
+
+/* ── Loading / Error ── */
+.loadingPage {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  color: var(--color-primary);
+  font-size: 1rem;
+}
+
+.errorPage {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 2rem;
+  gap: 1rem;
+}
+
+.errorIcon { font-size: 4rem; }
+
+.errorPage h1 {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: var(--color-primary);
+}
+
+.errorPage p {
+  color: var(--color-text-light);
+  font-size: 1rem;
+}
+
+.btnBack {
+  display: inline-block;
+  background: var(--color-primary);
+  color: white;
+  padding: 0.75rem 1.75rem;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.2s;
+  margin-top: 0.5rem;
+}
+
+.btnBack:hover {
+  background: var(--color-primary-light);
+  transform: translateY(-1px);
+}
+
+/* ── Galería ── */
+.galeria {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 4px;
+  max-height: 520px;
+  overflow: hidden;
+  background: #000;
+}
+
+.galeriaMain {
+  position: relative;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.galeriaMain img {
+  width: 100%;
+  height: 520px;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.galeriaMain:hover img {
+  transform: scale(1.02);
+}
+
+.btnVerFotos {
+  position: absolute;
+  bottom: 1.25rem;
+  right: 1.25rem;
+  background: white;
+  color: var(--color-primary);
+  border: none;
+  padding: 0.6rem 1.25rem;
+  border-radius: var(--radius-sm);
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  box-shadow: var(--shadow-md);
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.btnVerFotos:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-lg);
+}
+
+.galeriaThumbs {
+  display: grid;
+  grid-template-rows: repeat(4, 1fr);
+  gap: 4px;
+}
+
+.galeriaThumb {
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.galeriaThumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.galeriaThumb:hover img {
+  transform: scale(1.05);
+}
+
+.galeriaThumbMore .moreOverlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.galeriaPlaceholder {
+  height: 300px;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  color: rgba(255,255,255,0.6);
+  font-size: 4rem;
+}
+
+.galeriaPlaceholder p {
+  font-size: 1rem;
+}
+
+/* ── Lightbox ── */
+.lightbox {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.95);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.lightboxImg {
+  max-width: 90vw;
+  max-height: 85vh;
+  object-fit: contain;
+  border-radius: var(--radius-sm);
+  cursor: default;
+}
+
+.lightboxClose {
+  position: absolute;
+  top: 1.5rem;
+  right: 1.5rem;
+  background: rgba(255,255,255,0.15);
+  border: none;
+  color: white;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  font-size: 1.2rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+
+.lightboxClose:hover { background: rgba(255,255,255,0.3); }
+
+.lightboxArrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255,255,255,0.15);
+  border: none;
+  color: white;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  font-size: 2rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+  line-height: 1;
+}
+
+.lightboxArrow:hover { background: rgba(255,255,255,0.3); }
+.lightboxLeft { left: 1.5rem; }
+.lightboxRight { right: 1.5rem; }
+
+.lightboxCounter {
+  position: absolute;
+  bottom: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  color: rgba(255,255,255,0.7);
+  font-size: 0.9rem;
+  background: rgba(0,0,0,0.4);
+  padding: 0.3rem 0.8rem;
+  border-radius: var(--radius-full);
+}
+
+/* ── Contenido ── */
+.contenido {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 2.5rem 2rem 4rem;
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 3rem;
+  align-items: start;
+}
+
+/* Columna izquierda */
+.columnaIzq {
+  min-width: 0;
+}
+
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.breadcrumb a {
+  color: var(--color-text-light);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.breadcrumb a:hover { color: var(--color-primary); }
+
+.encabezado { margin-bottom: 1.5rem; }
+
+.badges {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.tipoBadge {
+  background: var(--color-bg-warm);
+  color: var(--color-primary);
+  padding: 0.3rem 0.8rem;
+  border-radius: var(--radius-full);
+  font-size: 0.8rem;
+  font-weight: 600;
+  border: 1px solid var(--color-border-light);
+}
+
+.estadoBadge {
+  background: #d1fae5;
+  color: #065f46;
+  padding: 0.3rem 0.8rem;
+  border-radius: var(--radius-full);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.titulo {
+  font-size: 1.9rem;
+  font-weight: 800;
+  color: var(--color-primary);
+  line-height: 1.2;
+  margin-bottom: 0.6rem;
+}
+
+.ubicacion {
+  font-size: 1rem;
+  color: var(--color-text-light);
+}
+
+/* Capacidad */
+.capacidadGrid {
+  display: flex;
+  gap: 1.5rem;
+  padding: 1.25rem 0;
+  flex-wrap: wrap;
+}
+
+.capacidadItem {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.capacidadIcon { font-size: 1.4rem; }
+
+.capacidadValue {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-text);
+  line-height: 1.2;
+}
+
+.capacidadLabel {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+}
+
+.divider {
+  border: none;
+  border-top: 1px solid var(--color-border-light);
+  margin: 1.75rem 0;
+}
+
+/* Secciones */
+.seccion { margin-bottom: 2rem; }
+
+.seccionTitulo {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  margin-bottom: 1rem;
+}
+
+.descripcion {
+  font-size: 1rem;
+  color: var(--color-text-light);
+  line-height: 1.8;
+  white-space: pre-line;
+}
+
+/* Amenities */
+.amenitiesGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.75rem;
+}
+
+.amenityItem {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 0.875rem;
+  background: var(--color-bg-warm);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border-light);
+  transition: border-color 0.2s;
+}
+
+.amenityItem:hover {
+  border-color: var(--color-border);
+}
+
+.amenityIcon { font-size: 1.2rem; flex-shrink: 0; }
+
+.amenityNombre {
+  font-size: 0.9rem;
+  color: var(--color-text);
+  font-weight: 500;
+}
+
+/* Info adicional */
+.infoGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 1rem;
+}
+
+.infoItem {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.infoLabel {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+
+.infoValue {
+  font-size: 0.95rem;
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+/* ── Columna derecha ── */
+.columnaDer {
+  position: sticky;
+  top: calc(var(--navbar-height) + 1.5rem);
+}
+
+.reservaCard {
+  background: white;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 1.75rem;
+  box-shadow: var(--shadow-md);
+}
+
+.reservaPrecio {
+  margin-bottom: 1.25rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.reservaPrecioValor {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--color-primary);
+}
+
+.reservaPrecioLabel {
+  font-size: 0.95rem;
+  color: var(--color-text-muted);
+}
+
+.reservaCapacidad {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-bottom: 1.5rem;
+}
+
+.reservaCapItem {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.9rem;
+  color: var(--color-text-light);
+}
+
+.reservaCapItem span:first-child { font-size: 1.1rem; }
+
+.btnReserva {
+  display: block;
+  width: 100%;
+  background: #25D366;
+  color: white;
+  text-align: center;
+  padding: 0.95rem;
+  border-radius: var(--radius-sm);
+  font-weight: 700;
+  font-size: 1rem;
+  text-decoration: none;
+  transition: all 0.2s;
+  margin-bottom: 0.75rem;
+}
+
+.btnReserva:hover {
+  background: #20bd5a;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 15px rgba(37, 211, 102, 0.35);
+}
+
+.reservaHint {
+  text-align: center;
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+  margin-bottom: 1.25rem;
+}
+
+.reservaGestionado {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  background: var(--color-bg-warm);
+  border-radius: var(--radius-sm);
+  padding: 1rem;
+  border: 1px solid var(--color-border-light);
+}
+
+.reservaGestionado span { font-size: 1.3rem; flex-shrink: 0; }
+
+.reservaGestionado strong {
+  display: block;
+  font-size: 0.9rem;
+  color: var(--color-primary);
+  margin-bottom: 0.2rem;
+}
+
+.reservaGestionado p {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  line-height: 1.4;
+}
+
+.btnVolver {
+  display: block;
+  text-align: center;
+  margin-top: 1rem;
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+  text-decoration: none;
+  padding: 0.5rem;
+  transition: color 0.2s;
+}
+
+.btnVolver:hover { color: var(--color-primary); }
+
+/* ── Responsive ── */
+@media (max-width: 1024px) {
+  .contenido {
+    grid-template-columns: 1fr;
+  }
+
+  .columnaDer {
+    position: static;
+    order: -1;
+  }
+
+  .reservaCard {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    align-items: center;
+  }
+
+  .reservaPrecio {
+    border-bottom: none;
+    padding-bottom: 0;
+    margin-bottom: 0;
+    grid-column: 1 / -1;
+  }
+
+  .btnReserva { grid-column: 1 / -1; }
+  .reservaHint { grid-column: 1 / -1; margin-bottom: 0; }
+  .reservaGestionado { grid-column: 1 / -1; }
+}
+
+@media (max-width: 768px) {
+  .galeria {
+    grid-template-columns: 1fr;
+    max-height: none;
+  }
+
+  .galeriaMain img {
+    height: 280px;
+  }
+
+  .galeriaThumbs {
+    grid-template-rows: none;
+    grid-template-columns: repeat(4, 1fr);
+    max-height: 100px;
+  }
+
+  .contenido {
+    padding: 1.5rem 1.25rem 3rem;
+  }
+
+  .titulo {
+    font-size: 1.5rem;
+  }
+
+  .capacidadGrid {
+    gap: 1rem;
+  }
+
+  .amenitiesGrid {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  }
+
+  .reservaCard {
+    grid-template-columns: 1fr;
+  }
+
+  .lightboxArrow {
+    width: 40px;
+    height: 40px;
+    font-size: 1.5rem;
+  }
+
+  .lightboxLeft { left: 0.75rem; }
+  .lightboxRight { right: 0.75rem; }
+}

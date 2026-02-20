@@ -7,6 +7,61 @@ import { useRouter } from 'next/navigation';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import styles from './publicar.module.css';
 
+// Amenities agrupadas por categoría (estilo Airbnb/Booking)
+const AMENITIES_GRUPOS = [
+  {
+    categoria: '🌊 Destacados',
+    items: ['Piscina', 'Piscina climatizada', 'Jacuzzi', 'Vista al mar', 'Vista a la playa', 'Frente al mar', 'Acceso a la playa', 'Vista panorámica']
+  },
+  {
+    categoria: '🍳 Cocina',
+    items: ['Cocina equipada', 'Cocina completa', 'Microondas', 'Lavavajillas', 'Cafetera', 'Nespresso', 'Heladera', 'Freezer', 'Horno', 'Tostadora', 'Utensilios de cocina', 'Especias básicas']
+  },
+  {
+    categoria: '📶 Tecnología',
+    items: ['WiFi', 'WiFi de alta velocidad', 'Smart TV', 'TV cable', 'Netflix', 'Projector', 'Consola de videojuegos', 'Parlante Bluetooth', 'USB / carga inalámbrica']
+  },
+  {
+    categoria: '❄️ Clima',
+    items: ['Aire acondicionado', 'Calefacción central', 'Calefacción a leña', 'Chimenea', 'Ventilador de techo', 'Estufa eléctrica']
+  },
+  {
+    categoria: '🌿 Exteriores',
+    items: ['Jardín', 'Terraza', 'Balcón', 'Patio', 'Deck', 'Pérgola', 'Parrillero', 'BBQ', 'Fogón', 'Ducha exterior', 'Hamaca', 'Mesa de ping pong', 'Reposeras', 'Sombrilla']
+  },
+  {
+    categoria: '🚗 Acceso y estacionamiento',
+    items: ['Estacionamiento', 'Estacionamiento privado', 'Garage', 'Portero eléctrico', 'Check-in autónomo', 'Acceso 24hs']
+  },
+  {
+    categoria: '🛏️ Habitaciones y ropa de cama',
+    items: ['Ropa de cama incluida', 'Toallas incluidas', 'Almohadas extra', 'Placard', 'Percheros', 'Caja fuerte', 'Black-out (cortinas oscuras)']
+  },
+  {
+    categoria: '🫧 Lavandería',
+    items: ['Lavarropas', 'Secadora', 'Plancha', 'Tendedero', 'Lavandería compartida']
+  },
+  {
+    categoria: '👶 Familia y mascotas',
+    items: ['Apto mascotas', 'Cuna', 'Silla alta bebé', 'Juguetes', 'Piscina para niños', 'Cercas de seguridad']
+  },
+  {
+    categoria: '🔒 Seguridad',
+    items: ['Alarma', 'Cámaras exteriores', 'Detector de humo', 'Extintor', 'Botiquín de primeros auxilios', 'Detector de CO']
+  },
+  {
+    categoria: '💼 Trabajo y bienestar',
+    items: ['Escritorio', 'Lugar de trabajo', 'Gimnasio', 'Sauna', 'Bicicletas', 'Tablas de surf']
+  },
+  {
+    categoria: '♿ Accesibilidad',
+    items: ['Accesible silla de ruedas', 'Baño adaptado', 'Rampa de acceso', 'Sin escaleras']
+  },
+];
+
+// Lista plana para guardar en Firestore
+const TODOS_LOS_AMENITIES = AMENITIES_GRUPOS.flatMap(g => g.items);
+
 function PublicarContenido() {
   const router = useRouter();
   const [formData, setFormData] = useState({
@@ -21,12 +76,6 @@ function PublicarContenido() {
   const [showSuccess, setShowSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [draggedIndex, setDraggedIndex] = useState(null);
-
-  const amenitiesDisponibles = [
-    'Piscina', 'Vista a la playa', 'WiFi', 'Aire acondicionado',
-    'Parrillero', 'Estacionamiento', 'Cocina equipada', 'TV',
-    'Jardín', 'Terraza', 'Lavadora', 'Secadora'
-  ];
 
   const handlePhotoUpload = (e) => {
     const files = Array.from(e.target.files);
@@ -137,16 +186,19 @@ function PublicarContenido() {
         <div className={styles.headerContent}>
           <span className="section-label">Nuevo</span>
           <h1 className={styles.headerTitle}>Publicá tu propiedad</h1>
-          <p className={styles.headerSubtitle}>Completá los datos y nosotros nos encargamos de publicarla en Airbnb, Booking y MercadoLibre.</p>
+          <p className={styles.headerSubtitle}>
+            Completá los datos y nosotros nos encargamos de publicarla en Airbnb, Booking y MercadoLibre.
+          </p>
         </div>
       </div>
 
       <div className={styles.content}>
         <form onSubmit={handleSubmit} className={styles.formCard}>
 
+          {/* Fotos */}
           <div className={styles.section}>
             <h2 className={styles.sectionTitle}>📷 Fotos de la propiedad</h2>
-            <p className={styles.sectionHint}>Opcional. La primera será la portada.</p>
+            <p className={styles.sectionHint}>Opcional. La primera será la portada. Podés arrastrarlas para reordenar.</p>
             {fotos.length > 0 && (
               <div className={styles.photosGrid}>
                 {fotos.map((foto, index) => (
@@ -165,20 +217,23 @@ function PublicarContenido() {
               </div>
             )}
             <label className={styles.uploadArea}>
-              {fotos.length === 0 ? '📷 Hacé clic para agregar fotos' : `📷 Agregar más (${fotos.length})`}
+              {fotos.length === 0 ? '📷 Hacé clic para agregar fotos' : `📷 Agregar más (${fotos.length} subidas)`}
               <input type="file" accept="image/*" multiple onChange={handlePhotoUpload} style={{ display: 'none' }} />
             </label>
           </div>
 
+          {/* Datos */}
           <div className={styles.section}>
             <h2 className={styles.sectionTitle}>🏠 Datos de la propiedad</h2>
             <div className={styles.formGroup}>
               <label>Título *</label>
-              <input type="text" name="titulo" value={formData.titulo} onChange={handleChange} required placeholder="Ej: Casa en Punta Negra para 6 personas con piscina" />
+              <input type="text" name="titulo" value={formData.titulo} onChange={handleChange} required
+                placeholder="Ej: Casa en Punta Negra para 6 personas con piscina y vista al mar" />
             </div>
             <div className={styles.formGroup}>
               <label>Ubicación *</label>
-              <input type="text" name="ubicacion" value={formData.ubicacion} onChange={handleChange} required placeholder="Ej: Punta Negra, Maldonado" />
+              <input type="text" name="ubicacion" value={formData.ubicacion} onChange={handleChange} required
+                placeholder="Ej: Punta Negra, Maldonado" />
             </div>
             <div className={styles.formGroup}>
               <label>Tipo *</label>
@@ -187,51 +242,79 @@ function PublicarContenido() {
                 <option value="Apartamento">Apartamento</option>
                 <option value="Cabaña">Cabaña</option>
                 <option value="Chalet">Chalet</option>
+                <option value="Estudio">Estudio</option>
+                <option value="Villa">Villa</option>
               </select>
             </div>
             <div className={styles.formRow}>
               <div className={styles.formGroup}>
                 <label>Precio/noche (USD) *</label>
-                <input type="number" name="precioPorNoche" value={formData.precioPorNoche} onChange={handleChange} required min="1" placeholder="250" />
+                <input type="number" name="precioPorNoche" value={formData.precioPorNoche}
+                  onChange={handleChange} required min="1" placeholder="250" />
               </div>
               <div className={styles.formGroup}>
                 <label>Huéspedes *</label>
-                <input type="number" name="huespedes" value={formData.huespedes} onChange={handleChange} required min="1" placeholder="6" />
+                <input type="number" name="huespedes" value={formData.huespedes}
+                  onChange={handleChange} required min="1" placeholder="6" />
               </div>
             </div>
             <div className={styles.formRow3}>
               <div className={styles.formGroup}>
                 <label>Dormitorios *</label>
-                <input type="number" name="dormitorios" value={formData.dormitorios} onChange={handleChange} required min="1" placeholder="3" />
+                <input type="number" name="dormitorios" value={formData.dormitorios}
+                  onChange={handleChange} required min="1" placeholder="3" />
               </div>
               <div className={styles.formGroup}>
                 <label>Camas *</label>
-                <input type="number" name="camas" value={formData.camas} onChange={handleChange} required min="1" placeholder="4" />
+                <input type="number" name="camas" value={formData.camas}
+                  onChange={handleChange} required min="1" placeholder="4" />
               </div>
               <div className={styles.formGroup}>
                 <label>Baños *</label>
-                <input type="number" name="banos" value={formData.banos} onChange={handleChange} required min="1" placeholder="2" />
+                <input type="number" name="banos" value={formData.banos}
+                  onChange={handleChange} required min="1" placeholder="2" />
               </div>
             </div>
           </div>
 
+          {/* Amenities agrupadas */}
           <div className={styles.section}>
             <h2 className={styles.sectionTitle}>✨ Amenidades</h2>
-            <div className={styles.amenitiesGrid}>
-              {amenitiesDisponibles.map(amenity => (
-                <button key={amenity} type="button" onClick={() => toggleAmenity(amenity)}
-                  className={`${styles.amenityBtn} ${formData.amenities.includes(amenity) ? styles.amenityActive : ''}`}>
-                  {amenity}
-                </button>
-              ))}
-            </div>
+            <p className={styles.sectionHint}>
+              Seleccioná todo lo que tiene tu propiedad — {formData.amenities.length} seleccionadas
+            </p>
+            {AMENITIES_GRUPOS.map((grupo) => (
+              <div key={grupo.categoria} style={{ marginBottom: '1.25rem' }}>
+                <p style={{
+                  fontSize: '0.85rem', fontWeight: 700,
+                  color: 'var(--color-primary)', marginBottom: '0.5rem',
+                  textTransform: 'uppercase', letterSpacing: '0.3px'
+                }}>
+                  {grupo.categoria}
+                </p>
+                <div className={styles.amenitiesGrid}>
+                  {grupo.items.map(amenity => (
+                    <button
+                      key={amenity}
+                      type="button"
+                      onClick={() => toggleAmenity(amenity)}
+                      className={`${styles.amenityBtn} ${formData.amenities.includes(amenity) ? styles.amenityActive : ''}`}
+                    >
+                      {amenity}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
 
+          {/* Descripción */}
           <div className={styles.section}>
             <h2 className={styles.sectionTitle}>📝 Descripción</h2>
             <div className={styles.formGroup}>
-              <textarea name="descripcion" value={formData.descripcion} onChange={handleChange} required rows="5"
-                placeholder="Describí tu propiedad: ubicación, características, qué incluye..." />
+              <textarea name="descripcion" value={formData.descripcion} onChange={handleChange}
+                required rows="6"
+                placeholder="Describí tu propiedad: ubicación, características especiales, qué incluye, cercanía a la playa, normas de la casa..." />
             </div>
           </div>
 
@@ -246,13 +329,18 @@ function PublicarContenido() {
 
           {loading && (
             <div style={{ marginBottom: '1rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.9rem', fontWeight: 600, color: 'var(--color-primary)' }}>
+              <div style={{
+                display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem',
+                fontSize: '0.9rem', fontWeight: 600, color: 'var(--color-primary)'
+              }}>
                 <span>{etapa}</span><span>{progreso}%</span>
               </div>
               <div style={{ width: '100%', height: '14px', background: '#e8e8e8', borderRadius: '7px', overflow: 'hidden' }}>
                 <div style={{
                   width: `${progreso}%`, height: '100%',
-                  background: progreso === 100 ? 'var(--color-success)' : 'linear-gradient(90deg, var(--color-primary), var(--color-accent))',
+                  background: progreso === 100
+                    ? 'var(--color-success)'
+                    : 'linear-gradient(90deg, var(--color-primary), var(--color-accent))',
                   borderRadius: '7px', transition: 'width 0.5s ease'
                 }} />
               </div>
