@@ -1,8 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { db } from '@/lib/firebase';
-import { doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { firestoreUpdate, firestoreDelete } from '@/lib/firebase';
 import styles from '../../app/admin/admin.module.css';
 
 export default function AdminTickets({ tickets, onRefresh }) {
@@ -18,7 +17,7 @@ export default function AdminTickets({ tickets, onRefresh }) {
 
   const cambiarEstado = async (id, nuevoEstado) => {
     try {
-      await updateDoc(doc(db, 'tickets-soporte', id), { estado: nuevoEstado });
+      await firestoreUpdate('tickets-soporte', id, { estado: nuevoEstado });
       onRefresh();
     } catch (error) {
       alert('Error al actualizar');
@@ -28,7 +27,7 @@ export default function AdminTickets({ tickets, onRefresh }) {
   const eliminar = async (id) => {
     if (!confirm('¿Eliminar este ticket?')) return;
     try {
-      await deleteDoc(doc(db, 'tickets-soporte', id));
+      await firestoreDelete('tickets-soporte', id);
       onRefresh();
     } catch (error) {
       alert('Error al eliminar');

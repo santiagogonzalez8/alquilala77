@@ -1,8 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { auth, db } from '@/lib/firebase';
-import { collection, query, where, getDocs, deleteDoc, doc } from 'firebase/firestore';
+import { auth, firestoreGetCollection, firestoreDelete } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import ProtectedRoute from '@/components/ProtectedRoute';
@@ -35,9 +34,8 @@ function MisPropiedadesContenido() {
 
   const cargarMisPropiedades = async () => {
     try {
-      const q = query(collection(db, 'propiedades'), where('userId', '==', auth.currentUser.uid));
-      const snapshot = await getDocs(q);
-      const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+      // Usamos REST para leer
+      const data = await firestoreGetCollection('propiedades', 'userId', auth.currentUser.uid);
       setPropiedades(data);
       setFiltradas(data);
     } catch (error) {
@@ -50,7 +48,7 @@ function MisPropiedadesContenido() {
   const eliminarPropiedad = async (id) => {
     if (!confirm('¿Estás seguro de eliminar esta propiedad? Esta acción no se puede deshacer.')) return;
     try {
-      await deleteDoc(doc(db, 'propiedades', id));
+      await firestoreDelete('propiedades', id);
       cargarMisPropiedades();
     } catch (error) {
       alert('Error al eliminar');

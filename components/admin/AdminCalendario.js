@@ -1,8 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { db } from '@/lib/firebase';
-import { doc, updateDoc } from 'firebase/firestore';
+import { firestoreUpdate } from '@/lib/firebase';
 import styles from '../../app/admin/admin.module.css';
 
 export default function AdminCalendario({ propiedades, reservas, onRefresh }) {
@@ -46,7 +45,7 @@ export default function AdminCalendario({ propiedades, reservas, onRefresh }) {
       : [...fechasOcupadas, fecha];
 
     try {
-      await updateDoc(doc(db, 'propiedades', propSeleccionada), {
+      await firestoreUpdate('propiedades', propSeleccionada, {
         fechasOcupadas: nuevasFechas
       });
       onRefresh();

@@ -1,44 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { auth, storage } from '@/lib/firebase';
+import { auth, storage, firestoreAdd } from '@/lib/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useRouter } from 'next/navigation';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import styles from './publicar.module.css';
-
-// Escribir directo a Firestore via REST API (sin SDK)
-async function guardarEnFirestore(data) {
-  const projectId = 'alquilala-77';
-  const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/alquilala/documents/propiedades`;
-
-  // Convertir datos a formato Firestore REST
-  const fields = {};
-  for (const [key, value] of Object.entries(data)) {
-    if (Array.isArray(value)) {
-      fields[key] = {
-        arrayValue: {
-          values: value.map(v => ({ stringValue: String(v) }))
-        }
-      };
-    } else {
-      fields[key] = { stringValue: String(value) };
-    }
-  }
-
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ fields })
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.error?.message || `HTTP ${response.status}`);
-  }
-
-  return await response.json();
-}
 
 function PublicarContenido() {
   const router = useRouter();
@@ -93,7 +60,6 @@ function PublicarContenido() {
       let fotosURLs = [];
       const totalSteps = fotos.length + 1;
 
-      // Subir fotos a Storage (esto SÍ funciona según vimos)
       if (fotos.length > 0) {
         setEtapa('Subiendo fotos...');
         for (let i = 0; i < fotos.length; i++) {
@@ -114,11 +80,10 @@ function PublicarContenido() {
         setProgreso(50);
       }
 
-      // Guardar via REST API (NO usa el SDK de Firestore)
       setEtapa('Publicando...');
       setProgreso(90);
 
-      await guardarEnFirestore({
+      await firestoreAdd('propiedades', {
         titulo: formData.titulo,
         ubicacion: formData.ubicacion,
         precioPorNoche: formData.precioPorNoche,

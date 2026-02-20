@@ -1,8 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { auth, db } from '@/lib/firebase';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { auth, firestoreGetCollection } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import ProtectedRoute from '@/components/ProtectedRoute';
@@ -20,13 +19,13 @@ function MiPanelContenido() {
       if (!user) return;
 
       try {
-        // Cargar en paralelo
-        const [propSnap, resSnap] = await Promise.all([
-          getDocs(query(collection(db, 'propiedades'), where('userId', '==', user.uid))),
-          getDocs(query(collection(db, 'reservas'), where('userId', '==', user.uid))),
+        // Cargar en paralelo con REST
+        const [propsData, resData] = await Promise.all([
+          firestoreGetCollection('propiedades', 'userId', user.uid),
+          firestoreGetCollection('reservas', 'userId', user.uid),
         ]);
-        setPropiedades(propSnap.docs.map(d => ({ id: d.id, ...d.data() })));
-        setReservas(resSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+        setPropiedades(propsData);
+        setReservas(resData);
       } catch (error) {
         console.error('Error:', error);
       } finally {
@@ -34,7 +33,6 @@ function MiPanelContenido() {
       }
     };
 
-    // Pequeño delay para asegurar que auth.currentUser está listo
     const timer = setTimeout(cargar, 100);
     return () => clearTimeout(timer);
   }, []);
@@ -164,34 +162,4 @@ function MiPanelContenido() {
           </div>
         )}
 
-        {propRechazadas > 0 && (
-          <div className={styles.alertBox}>
-            <span>⚠️</span>
-            <div>
-              <strong>Tenés {propRechazadas} {propRechazadas === 1 ? 'propiedad rechazada' : 'propiedades rechazadas'}</strong>
-              <p>Revisá los motivos y volvé a publicar con los ajustes necesarios.</p>
-            </div>
-          </div>
-        )}
-
-        <div className={styles.infoBox}>
-          <h3>🔔 ¿Cómo funciona el proceso?</h3>
-          <div className={styles.infoSteps}>
-            <div className={styles.infoStep}><span className={styles.stepNumber}>1</span><p>Publicás tu propiedad con fotos y datos</p></div>
-            <div className={styles.infoStep}><span className={styles.stepNumber}>2</span><p>Nuestro equipo la revisa y aprueba</p></div>
-            <div className={styles.infoStep}><span className={styles.stepNumber}>3</span><p>La publicamos en Airbnb, Booking y MercadoLibre</p></div>
-            <div className={styles.infoStep}><span className={styles.stepNumber}>4</span><p>Gestionamos reservas, limpieza y huéspedes</p></div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-export default function MiPanel() {
-  return (
-    <ProtectedRoute>
-      <MiPanelContenido />
-    </ProtectedRoute>
-  );
-}
+        {propRech

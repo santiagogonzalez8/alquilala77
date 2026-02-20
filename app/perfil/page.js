@@ -1,8 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { auth, db, storage } from '@/lib/firebase'
-import { doc, getDoc, setDoc, updateDoc, enableNetwork } from 'firebase/firestore'
+import { auth, storage, firestoreGetCollection, firestoreUpdate, firestoreAdd } from '@/lib/firebase'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { updatePassword, updateProfile } from 'firebase/auth'
 import ProtectedRoute from '@/components/ProtectedRoute'
@@ -27,27 +26,25 @@ function PerfilContenido() {
     setTimeout(() => setToast(''), 4000)
   }
 
-  const reconnect = async () => {
-    try { await enableNetwork(db) } catch (e) { console.log('reconnect:', e.message) }
-  }
-
   const loadUserData = async () => {
     if (!auth.currentUser) return
-    await reconnect()
     try {
-      const userRef = doc(db, 'users', auth.currentUser.uid)
-      const userDoc = await getDoc(userRef)
-      if (userDoc.exists()) {
-        setUserData(userDoc.data())
+      // Usamos REST para leer el documento del usuario
+      const users = await firestoreGetCollection('users', 'id', auth.currentUser.uid);
+      
+      if (users.length > 0) {
+        setUserData(users[0])
       } else {
         const initial = {
+          id: auth.currentUser.uid,
           displayName: auth.currentUser.displayName || '',
           email: auth.currentUser.email || '',
           phone: '', location: '', bio: '',
           photoURL: auth.currentUser.photoURL || ''
         }
         setUserData(initial)
-        await setDoc(userRef, { ...initial, createdAt: new Date() })
+        // Creamos si no existe
+        await firestoreAdd('users', { ...initial, createdAt: new Date().toISOString() })
       }
     } catch (error) {
       console.error('Error cargando perfil:', error)
@@ -68,13 +65,10 @@ function PerfilContenido() {
       const photoURL = await getDownloadURL(storageRef)
       await updateProfile(auth.currentUser, { photoURL })
 
-      await reconnect()
-      const userRef = doc(db, 'users', auth.currentUser.uid)
-      try {
-        await updateDoc(userRef, { photoURL, updatedAt: new Date() })
-      } catch {
-        await setDoc(userRef, { ...userData, photoURL, updatedAt: new Date() })
-      }
+      await firestoreUpdate('users', auth.currentUser.uid, { 
+        photoURL, 
+        updatedAt: new Date().toISOString() 
+      })
 
       setUserData(prev => ({ ...prev, photoURL }))
       showToast('✅ Foto actualizada correctamente')
@@ -95,8 +89,6 @@ function PerfilContenido() {
         await updateProfile(auth.currentUser, { displayName: userData.displayName })
       }
 
-      await reconnect()
-      const userRef = doc(db, 'users', auth.currentUser.uid)
       const dataToSave = {
         displayName: userData.displayName,
         email: userData.email,
@@ -104,14 +96,10 @@ function PerfilContenido() {
         location: userData.location || '',
         bio: userData.bio || '',
         photoURL: userData.photoURL || '',
-        updatedAt: new Date()
+        updatedAt: new Date().toISOString()
       }
 
-      try {
-        await updateDoc(userRef, dataToSave)
-      } catch {
-        await setDoc(userRef, { ...dataToSave, createdAt: new Date() })
-      }
+      await firestoreUpdate('users', auth.currentUser.uid, dataToSave)
 
       showToast('✅ Perfil guardado correctamente')
     } catch (error) {

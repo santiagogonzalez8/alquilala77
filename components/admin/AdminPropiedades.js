@@ -1,8 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { db } from '@/lib/firebase';
-import { doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { firestoreUpdate, firestoreDelete } from '@/lib/firebase';
 import styles from '../../app/admin/admin.module.css';
 
 export default function AdminPropiedades({ propiedades, onRefresh }) {
@@ -21,7 +20,7 @@ export default function AdminPropiedades({ propiedades, onRefresh }) {
 
   const cambiarEstado = async (id, nuevoEstado) => {
     try {
-      await updateDoc(doc(db, 'propiedades', id), { estado: nuevoEstado });
+      await firestoreUpdate('propiedades', id, { estado: nuevoEstado });
       onRefresh();
     } catch (error) {
       alert('Error al actualizar');
@@ -31,7 +30,7 @@ export default function AdminPropiedades({ propiedades, onRefresh }) {
   const eliminar = async (id) => {
     if (!confirm('¿Eliminar esta propiedad permanentemente?')) return;
     try {
-      await deleteDoc(doc(db, 'propiedades', id));
+      await firestoreDelete('propiedades', id);
       onRefresh();
     } catch (error) {
       alert('Error al eliminar');

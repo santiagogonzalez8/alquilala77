@@ -1,163 +1,196 @@
-'use client';
+'use client'
 
-import { useState } from 'react';
-import { db } from '@/lib/firebase';
-import { collection, addDoc } from 'firebase/firestore';
-import styles from './soporte.module.css';
+import { useState, useEffect } from 'react'
+import { auth, storage, firestoreGetCollection, firestoreUpdate, firestoreAdd } from '@/lib/firebase'
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
+import { updatePassword, updateProfile } from 'firebase/auth'
+import ProtectedRoute from '@/components/ProtectedRoute'
+import styles from './perfil.module.css'
 
-export default function Soporte() {
-  const [formData, setFormData] = useState({
-    nombre: '',
-    email: '',
-    asunto: 'Consulta general',
-    mensaje: ''
-  });
-  const [loading, setLoading] = useState(false);
-  const [enviado, setEnviado] = useState(false);
+function PerfilContenido() {
+  const [userData, setUserData] = useState({
+    displayName: '', email: '', phone: '', location: '', bio: '', photoURL: ''
+  })
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [uploading, setUploading] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [savingPassword, setSavingPassword] = useState(false)
+  const [toast, setToast] = useState('')
+  const [toastType, setToastType] = useState('success')
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
+  useEffect(() => { loadUserData() }, [])
+
+  const showToast = (msg, type = 'success') => {
+    setToast(msg); setToastType(type);
+    setTimeout(() => setToast(''), 4000)
+  }
+
+  const loadUserData = async () => {
+    if (!auth.currentUser) return
+    try {
+      // Usamos REST para leer el documento del usuario
+      const users = await firestoreGetCollection('users', 'id', auth.currentUser.uid);
+      
+      if (users.length > 0) {
+        setUserData(users[0])
+      } else {
+        const initial = {
+          id: auth.currentUser.uid,
+          displayName: auth.currentUser.displayName || '',
+          email: auth.currentUser.email || '',
+          phone: '', location: '', bio: '',
+          photoURL: auth.currentUser.photoURL || ''
+        }
+        setUserData(initial)
+        // Creamos si no existe
+        await firestoreAdd('users', { ...initial, createdAt: new Date().toISOString() })
+      }
+    } catch (error) {
+      console.error('Error cargando perfil:', error)
+    }
+  }
+
+  const handleChange = (e) => setUserData({ ...userData, [e.target.name]: e.target.value })
+
+  const handlePhotoUpload = async (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+    if (file.size > 2 * 1024 * 1024) { showToast('La imagen debe ser menor a 2MB', 'error'); return }
+
+    setUploading(true)
+    try {
+      const storageRef = ref(storage, `profile-photos/${auth.currentUser.uid}_${Date.now()}`)
+      await uploadBytes(storageRef, file)
+      const photoURL = await getDownloadURL(storageRef)
+      await updateProfile(auth.currentUser, { photoURL })
+
+      await firestoreUpdate('users', auth.currentUser.uid, { 
+        photoURL, 
+        updatedAt: new Date().toISOString() 
+      })
+
+      setUserData(prev => ({ ...prev, photoURL }))
+      showToast('✅ Foto actualizada correctamente')
+    } catch (error) {
+      console.error('Error subiendo foto:', error)
+      showToast(`Error: ${error.message}`, 'error')
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  const handleSaveProfile = async (e) => {
+    e.preventDefault()
+    setSaving(true)
 
     try {
-      await addDoc(collection(db, 'tickets-soporte'), {
-        ...formData,
-        fecha: new Date().toISOString(),
-        estado: 'pendiente'
-      });
+      if (userData.displayName !== auth.currentUser.displayName) {
+        await updateProfile(auth.currentUser, { displayName: userData.displayName })
+      }
 
-      setEnviado(true);
-      setFormData({ nombre: '', email: '', asunto: 'Consulta general', mensaje: '' });
+      const dataToSave = {
+        displayName: userData.displayName,
+        email: userData.email,
+        phone: userData.phone || '',
+        location: userData.location || '',
+        bio: userData.bio || '',
+        photoURL: userData.photoURL || '',
+        updatedAt: new Date().toISOString()
+      }
+
+      await firestoreUpdate('users', auth.currentUser.uid, dataToSave)
+
+      showToast('✅ Perfil guardado correctamente')
     } catch (error) {
-      console.error('Error al enviar:', error);
-      alert('Error al enviar el mensaje. Intenta de nuevo.');
+      console.error('Error:', error)
+      showToast(`Error: ${error.message}`, 'error')
     } finally {
-      setLoading(false);
+      setSaving(false)
     }
-  };
+  }
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
+  const handleChangePassword = async (e) => {
+    e.preventDefault()
+    if (newPassword.length < 6) { showToast('Mínimo 6 caracteres', 'error'); return }
+    if (newPassword !== confirmPassword) { showToast('No coinciden', 'error'); return }
+
+    setSavingPassword(true)
+    try {
+      await updatePassword(auth.currentUser, newPassword)
+      showToast('✅ Contraseña actualizada')
+      setNewPassword(''); setConfirmPassword('')
+    } catch (error) {
+      showToast(error.code === 'auth/requires-recent-login'
+        ? 'Cerrá sesión y volvé a iniciar antes de cambiar contraseña' : `Error: ${error.message}`, 'error')
+    } finally { setSavingPassword(false) }
+  }
+
+  const getInitials = () => userData.displayName ? userData.displayName.charAt(0).toUpperCase() : 'U'
 
   return (
     <div className={styles.page}>
-      {/* Header */}
+      {toast && (
+        <div className={styles.toast} style={{ background: toastType === 'error' ? 'var(--color-danger)' : 'var(--color-success)' }}>
+          {toast}
+        </div>
+      )}
+
       <div className={styles.header}>
         <div className={styles.headerContent}>
-          <span className="section-label">Contacto</span>
-          <h1 className={styles.headerTitle}>Contáctanos</h1>
-          <p className={styles.headerSubtitle}>
-            ¿Tenés una consulta sobre nuestro servicio? Escribinos y te respondemos a la brevedad.
-          </p>
+          <span className="section-label">Mi cuenta</span>
+          <h1 className={styles.headerTitle}>Mi Perfil</h1>
         </div>
       </div>
 
-      <div className={styles.content}>
-        <div className={styles.grid}>
-          {/* Formulario */}
-          <div className={styles.formCard}>
-            {enviado ? (
-              <div className={styles.successBox}>
-                <div className={styles.successIcon}>✅</div>
-                <h3>¡Mensaje enviado!</h3>
-                <p>Te responderemos lo antes posible. Revisá tu email.</p>
-                <button
-                  onClick={() => setEnviado(false)}
-                  className={styles.btnSendAnother}
-                >
-                  Enviar otro mensaje
-                </button>
-              </div>
-            ) : (
-              <form onSubmit={handleSubmit}>
-                <div className={styles.formGroup}>
-                  <label>Nombre completo *</label>
-                  <input
-                    type="text"
-                    name="nombre"
-                    value={formData.nombre}
-                    onChange={handleChange}
-                    required
-                    placeholder="Tu nombre"
-                  />
-                </div>
-
-                <div className={styles.formGroup}>
-                  <label>Email *</label>
-                  <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    required
-                    placeholder="tu@email.com"
-                  />
-                </div>
-
-                <div className={styles.formGroup}>
-                  <label>Asunto</label>
-                  <select name="asunto" value={formData.asunto} onChange={handleChange}>
-                    <option value="Consulta general">Consulta general</option>
-                    <option value="Quiero publicar mi propiedad">Quiero publicar mi propiedad</option>
-                    <option value="Problema técnico">Problema técnico</option>
-                    <option value="Información de precios">Información de precios</option>
-                    <option value="Otro">Otro</option>
-                  </select>
-                </div>
-
-                <div className={styles.formGroup}>
-                  <label>Mensaje *</label>
-                  <textarea
-                    name="mensaje"
-                    value={formData.mensaje}
-                    onChange={handleChange}
-                    required
-                    rows="5"
-                    placeholder="Contanos en qué podemos ayudarte..."
-                  />
-                </div>
-
-                <button type="submit" disabled={loading} className={styles.btnSubmit}>
-                  {loading ? 'Enviando...' : 'Enviar mensaje'}
-                </button>
-              </form>
-            )}
+      <div className={styles.container}>
+        <div className={styles.photoSection}>
+          <div className={styles.photo}>
+            {userData.photoURL ? <img src={userData.photoURL} alt="Perfil" /> : <div className={styles.initials}>{getInitials()}</div>}
           </div>
-
-          {/* Info lateral */}
-          <div className={styles.infoSide}>
-            <div className={styles.infoCard}>
-              <div className={styles.infoIcon}>💬</div>
-              <h3>WhatsApp</h3>
-              <p>Respuesta rápida por chat</p>
-              <a
-                href="https://wa.me/59895532294?text=Hola!%20Quiero%20información%20sobre%20el%20servicio%20de%20gestión%20de%20alquileres"
-                target="_blank"
-                rel="noopener noreferrer"
-                className={styles.infoLink}
-              >
-                Escribinos →
-              </a>
-            </div>
-
-            <div className={styles.infoCard}>
-              <div className={styles.infoIcon}>📧</div>
-              <h3>Email</h3>
-              <p>Te respondemos en 24hs</p>
-              <a href="mailto:gosanti2000@gmail.com" className={styles.infoLink}>
-                gosanti2000@gmail.com
-              </a>
-            </div>
-
-            <div className={styles.infoCard}>
-              <div className={styles.infoIcon}>📍</div>
-              <h3>Ubicación</h3>
-              <p>Montevideo, Uruguay</p>
-            </div>
+          <div>
+            <label htmlFor="photo-upload" className={styles.btnPhoto}>
+              {uploading ? '⏳ Subiendo...' : '📷 Cambiar foto'}
+            </label>
+            <input id="photo-upload" type="file" accept="image/*" onChange={handlePhotoUpload} disabled={uploading} style={{ display: 'none' }} />
+            <p className={styles.hint}>JPG o PNG, máx 2MB</p>
           </div>
+        </div>
+
+        <div className={styles.section}>
+          <h3>Información Personal</h3>
+          <form onSubmit={handleSaveProfile}>
+            <div className={styles.formGroup}><label>Nombre completo *</label>
+              <input type="text" name="displayName" value={userData.displayName} onChange={handleChange} required /></div>
+            <div className={styles.formGroup}><label>Correo electrónico</label>
+              <input type="email" value={userData.email} disabled /><p className={styles.hint}>No se puede cambiar</p></div>
+            <div className={styles.formGroup}><label>Teléfono</label>
+              <input type="tel" name="phone" value={userData.phone} onChange={handleChange} placeholder="+598 99 123 456" /></div>
+            <div className={styles.formGroup}><label>Ubicación</label>
+              <input type="text" name="location" value={userData.location} onChange={handleChange} placeholder="Montevideo, Uruguay" /></div>
+            <div className={styles.formGroup}><label>Sobre mí</label>
+              <textarea name="bio" value={userData.bio} onChange={handleChange} rows="4" placeholder="Contanos sobre vos..." /></div>
+            <button type="submit" className={styles.btnSave} disabled={saving}>
+              {saving ? '⏳ Guardando...' : '💾 Guardar Cambios'}</button>
+          </form>
+        </div>
+
+        <div className={styles.section}>
+          <h3>Cambiar Contraseña</h3>
+          <form onSubmit={handleChangePassword}>
+            <div className={styles.formGroup}><label>Nueva contraseña</label>
+              <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Mínimo 6 caracteres" /></div>
+            <div className={styles.formGroup}><label>Confirmar</label>
+              <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Repetí la contraseña" /></div>
+            <button type="submit" className={styles.btnSave} disabled={savingPassword}>
+              {savingPassword ? '⏳ Cambiando...' : '🔒 Cambiar Contraseña'}</button>
+          </form>
         </div>
       </div>
     </div>
-  );
+  )
+}
+
+export default function Perfil() {
+  return (<ProtectedRoute><PerfilContenido /></ProtectedRoute>)
 }

@@ -1,8 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { db } from '@/lib/firebase';
-import { collection, addDoc, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { firestoreAdd, firestoreUpdate, firestoreDelete } from '@/lib/firebase';
 import styles from '../../app/admin/admin.module.css';
 
 export default function AdminTareas({ tareas, propiedades, onRefresh }) {
@@ -38,7 +37,7 @@ export default function AdminTareas({ tareas, propiedades, onRefresh }) {
     e.preventDefault();
     const propNombre = propiedades.find(p => p.id === nuevaTarea.propiedadId)?.titulo || '';
     try {
-      await addDoc(collection(db, 'tareas'), {
+      await firestoreAdd('tareas', {
         ...nuevaTarea,
         propiedadNombre: propNombre,
         estado: 'pendiente',
@@ -54,7 +53,7 @@ export default function AdminTareas({ tareas, propiedades, onRefresh }) {
 
   const cambiarEstado = async (id, nuevoEstado) => {
     try {
-      await updateDoc(doc(db, 'tareas', id), {
+      await firestoreUpdate('tareas', id, {
         estado: nuevoEstado,
         ...(nuevoEstado === 'completada' ? { fechaCompletada: new Date().toISOString() } : {})
       });
@@ -67,7 +66,7 @@ export default function AdminTareas({ tareas, propiedades, onRefresh }) {
   const eliminarTarea = async (id) => {
     if (!confirm('¿Eliminar esta tarea?')) return;
     try {
-      await deleteDoc(doc(db, 'tareas', id));
+      await firestoreDelete('tareas', id);
       onRefresh();
     } catch (error) {
       alert('Error al eliminar');
