@@ -1,14 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { auth, firestoreGetCollection, firestoreDelete } from '@/lib/firebase';
-import { useRouter } from 'next/navigation';
+import { auth, firestoreGetAll, firestoreDelete } from '@/lib/firebase';
+import { onAuthStateChanged } from 'firebase/auth';
 import Link from 'next/link';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import styles from './mispropiedades.module.css';
 
 function MisPropiedadesContenido() {
-  const router = useRouter();
   const [propiedades, setPropiedades] = useState([]);
   const [filtradas, setFiltradas] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -16,7 +15,13 @@ function MisPropiedadesContenido() {
   const [filtroEstado, setFiltroEstado] = useState('todos');
   const [expandido, setExpandido] = useState(null);
 
-  useEffect(() => { cargarMisPropiedades(); }, []);
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (!user) return;
+      await cargarMisPropiedades(user.uid);
+    });
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => {
     let resultado = propiedades;
@@ -32,10 +37,11 @@ function MisPropiedadesContenido() {
     setFiltradas(resultado);
   }, [busqueda, filtroEstado, propiedades]);
 
-  const cargarMisPropiedades = async () => {
+  const cargarMisPropiedades = async (uid) => {
     try {
-      // Usamos REST para leer
-      const data = await firestoreGetCollection('propiedades', 'userId', auth.currentUser.uid);
+      const data = await firestoreGetAll('propiedades', [
+        { field: 'userId', op: 'EQUAL', value: uid }
+      ]);
       setPropiedades(data);
       setFiltradas(data);
     } catch (error) {
@@ -49,7 +55,8 @@ function MisPropiedadesContenido() {
     if (!confirm('¿Estás seguro de eliminar esta propiedad? Esta acción no se puede deshacer.')) return;
     try {
       await firestoreDelete('propiedades', id);
-      cargarMisPropiedades();
+      const user = auth.currentUser;
+      if (user) await cargarMisPropiedades(user.uid);
     } catch (error) {
       alert('Error al eliminar');
     }
@@ -83,7 +90,6 @@ function MisPropiedadesContenido() {
       </div>
 
       <div className={styles.content}>
-        {/* Filtros */}
         {propiedades.length > 0 && (
           <div className={styles.filterBar}>
             <input
@@ -107,14 +113,12 @@ function MisPropiedadesContenido() {
           </div>
         )}
 
-        {/* Loading */}
         {loading ? (
           <div className={styles.emptyState}>
             <div className="loading-spinner" style={{ margin: '0 auto 1rem' }}></div>
             <p>Cargando tus propiedades...</p>
           </div>
         ) : propiedades.length === 0 ? (
-          /* Empty */
           <div className={styles.emptyState}>
             <div className={styles.emptyIcon}>🏖️</div>
             <h3>No tenés propiedades publicadas</h3>
@@ -131,13 +135,11 @@ function MisPropiedadesContenido() {
             </button>
           </div>
         ) : (
-          /* Grid */
           <div className={styles.grid}>
             {filtradas.map(prop => {
               const estadoInfo = getEstadoInfo(prop.estado);
               return (
                 <div key={prop.id} className={styles.card}>
-                  {/* Imagen */}
                   <div
                     className={styles.cardImage}
                     style={{
@@ -152,13 +154,11 @@ function MisPropiedadesContenido() {
                     {prop.tipoPropiedad && (
                       <span className={styles.typeBadge}>{prop.tipoPropiedad}</span>
                     )}
-                    {/* Fotos count */}
                     {prop.imagenes?.length > 1 && (
                       <span className={styles.photosCount}>📷 {prop.imagenes.length}</span>
                     )}
                   </div>
 
-                  {/* Body */}
                   <div className={styles.cardBody}>
                     <h3 className={styles.cardTitle}>{prop.titulo}</h3>
                     <p className={styles.cardLocation}>📍 {prop.ubicacion}</p>
@@ -169,7 +169,6 @@ function MisPropiedadesContenido() {
                       <span>🚿 {prop.banos}</span>
                     </div>
 
-                    {/* Amenities preview */}
                     {prop.amenities?.length > 0 && (
                       <div className={styles.amenitiesPreview}>
                         {prop.amenities.slice(0, 3).map((a, i) => (
@@ -181,10 +180,8 @@ function MisPropiedadesContenido() {
                       </div>
                     )}
 
-                    {/* Estado descripción */}
                     <p className={styles.estadoDesc}>{estadoInfo.desc}</p>
 
-                    {/* Footer */}
                     <div className={styles.cardFooter}>
                       <div className={styles.cardPrice}>
                         <span className={styles.priceValue}>${prop.precioPorNoche}</span>
@@ -204,7 +201,6 @@ function MisPropiedadesContenido() {
                     </div>
                   </div>
 
-                  {/* Expandido */}
                   {expandido === prop.id && (
                     <div className={styles.cardExpanded}>
                       {prop.descripcion && (
@@ -227,7 +223,12 @@ function MisPropiedadesContenido() {
                       )}
                       <div className={styles.expandedSection}>
                         <strong>Fecha de publicación:</strong>
-                        <p>{prop.fechaPublicacion ? new Date(prop.fechaPublicacion).toLocaleDateString('es-UY', { day: 'numeric', month: 'long', year: 'numeric' }) : 'N/A'}</p>
+                        <p>{prop.fechaPublicacion
+                          ? new Date(prop.fechaPublicacion).toLocaleDateString('es-UY', {
+                              day: 'numeric', month: 'long', year: 'numeric'
+                            })
+                          : 'N/A'}
+                        </p>
                       </div>
                       {prop.fechasOcupadas?.length > 0 && (
                         <div className={styles.expandedSection}>

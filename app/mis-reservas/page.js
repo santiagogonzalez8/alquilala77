@@ -1,32 +1,32 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { auth, db } from '@/lib/firebase';
-import { collection, query, where, getDocs } from 'firebase/firestore';
-import { useRouter } from 'next/navigation';
+import { auth, firestoreGetAll } from '@/lib/firebase';
+import { onAuthStateChanged } from 'firebase/auth';
 import Link from 'next/link';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import styles from './misreservas.module.css';
 
 function MisReservasContenido() {
-  const router = useRouter();
   const [reservas, setReservas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filtroEstado, setFiltroEstado] = useState('todos');
 
   useEffect(() => {
-    const cargar = async () => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (!user) return;
       try {
-        const q = query(collection(db, 'reservas'), where('userId', '==', auth.currentUser.uid));
-        const snapshot = await getDocs(q);
-        setReservas(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+        const data = await firestoreGetAll('reservas', [
+          { field: 'userEmail', op: 'EQUAL', value: user.email }
+        ]);
+        setReservas(data);
       } catch (error) {
         console.error('Error:', error);
       } finally {
         setLoading(false);
       }
-    };
-    cargar();
+    });
+    return () => unsubscribe();
   }, []);
 
   const filtradas = reservas.filter(r =>
@@ -36,13 +36,13 @@ function MisReservasContenido() {
   const getEstadoInfo = (estado) => {
     switch (estado) {
       case 'confirmada': return { label: '✅ Confirmada', class: styles.badgeGreen };
-      case 'pendiente': return { label: '⏳ Pendiente', class: styles.badgeYellow };
-      case 'cancelada': return { label: '❌ Cancelada', class: styles.badgeRed };
-      default: return { label: estado, class: styles.badgeGray };
+      case 'pendiente':  return { label: '⏳ Pendiente',  class: styles.badgeYellow };
+      case 'cancelada':  return { label: '❌ Cancelada',  class: styles.badgeRed };
+      default:           return { label: estado,          class: styles.badgeGray };
     }
   };
 
-  const totalIngresos = filtradas
+  const totalIngresos = reservas
     .filter(r => r.estado === 'confirmada')
     .reduce((sum, r) => sum + (Number(r.precioTotal) || 0), 0);
 
@@ -54,13 +54,12 @@ function MisReservasContenido() {
           <h1 className={styles.headerTitle}>Mis Reservas</h1>
           <p className={styles.headerSubtitle}>
             {reservas.length} {reservas.length === 1 ? 'reserva' : 'reservas'} en total
-            {totalIngresos > 0 && ` • $${totalIngresos} en ingresos confirmados`}
+            {totalIngresos > 0 && ` • $${totalIngresos.toLocaleString('es-UY')} en ingresos confirmados`}
           </p>
         </div>
       </div>
 
       <div className={styles.content}>
-        {/* Filtro */}
         {reservas.length > 0 && (
           <div className={styles.filterBar}>
             <select
@@ -99,7 +98,7 @@ function MisReservasContenido() {
               return (
                 <div key={r.id} className={styles.card}>
                   <div className={styles.cardHeader}>
-                    <h3 className={styles.cardTitle}>{r.propiedad || 'Propiedad'}</h3>
+                    <h3 className={styles.cardTitle}>{r.propiedad || r.propiedadId || 'Propiedad'}</h3>
                     <span className={`${styles.badge} ${estadoInfo.class}`}>{estadoInfo.label}</span>
                   </div>
                   <div className={styles.cardBody}>
@@ -117,11 +116,12 @@ function MisReservasContenido() {
                     <div className={styles.detailsRow}>
                       {r.noches && <span className={styles.detail}>🌙 {r.noches} noches</span>}
                       {r.nombreHuesped && <span className={styles.detail}>👤 {r.nombreHuesped}</span>}
+                      {r.metodoPago && <span className={styles.detail}>💳 {r.metodoPago}</span>}
                     </div>
                     {r.precioTotal && (
                       <div className={styles.totalRow}>
                         <span className={styles.totalLabel}>Total</span>
-                        <span className={styles.totalValue}>${r.precioTotal}</span>
+                        <span className={styles.totalValue}>${r.precioTotal} USD</span>
                       </div>
                     )}
                   </div>

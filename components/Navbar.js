@@ -2,9 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { auth, db } from '@/lib/firebase'
+import { auth, firestoreGet } from '@/lib/firebase'
 import { signOut } from 'firebase/auth'
-import { doc, getDoc } from 'firebase/firestore'
 import { useRouter } from 'next/navigation'
 import { isAdmin } from '@/lib/adminConfig'
 import styles from './Navbar.module.css'
@@ -22,8 +21,8 @@ export default function Navbar({ user }) {
   }, [])
 
   useEffect(() => {
-    if (user) { loadUserData(user.uid) }
-    else { setUserData(null) }
+    if (user) loadUserData(user.uid)
+    else setUserData(null)
   }, [user])
 
   useEffect(() => {
@@ -34,15 +33,24 @@ export default function Navbar({ user }) {
 
   const loadUserData = async (uid) => {
     try {
-      const userDoc = await getDoc(doc(db, 'users', uid))
-      if (userDoc.exists()) { setUserData(userDoc.data()) }
-      else { setUserData({ displayName: auth.currentUser?.displayName, photoURL: auth.currentUser?.photoURL }) }
-    } catch (error) { console.error('Error:', error) }
+      const data = await firestoreGet('users', uid)
+      setUserData(data)
+    } catch {
+      setUserData({
+        displayName: auth.currentUser?.displayName,
+        photoURL: auth.currentUser?.photoURL
+      })
+    }
   }
 
   const handleLogout = async () => {
-    try { await signOut(auth); setMenuOpen(false); router.push('/') }
-    catch (error) { console.error('Error:', error) }
+    try {
+      await signOut(auth)
+      setMenuOpen(false)
+      router.push('/')
+    } catch (error) {
+      console.error('Error:', error)
+    }
   }
 
   const getUserInitials = () => {
@@ -81,8 +89,14 @@ export default function Navbar({ user }) {
                 {isAdmin(user.email) && (
                   <Link href="/admin" className={styles.adminBadge}>Panel Admin</Link>
                 )}
-                <button className={styles.userButton} onClick={() => setMenuOpen(!menuOpen)} aria-label="Menú de usuario">
-                  <div className={styles.hamburgerLines}><span></span><span></span><span></span></div>
+                <button
+                  className={styles.userButton}
+                  onClick={() => setMenuOpen(!menuOpen)}
+                  aria-label="Menú de usuario"
+                >
+                  <div className={styles.hamburgerLines}>
+                    <span></span><span></span><span></span>
+                  </div>
                   {getPhotoURL() ? (
                     <img src={getPhotoURL()} alt="User" className={styles.userThumb} />
                   ) : (
