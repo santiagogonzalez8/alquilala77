@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { firestoreGetPublicById } from '@/lib/firebase';
+import { firestoreGetPublicById, auth } from '@/lib/firebase';
 import styles from './propiedad.module.css';
 
 const AMENITY_ICONS = {
@@ -49,7 +49,6 @@ function getAmenityIcon(name) {
   return AMENITY_ICONS[name] || '✓';
 }
 
-// Formatear fecha para mostrar: "15 mar"
 function formatFecha(dateStr) {
   if (!dateStr) return '';
   const [y, m, d] = dateStr.split('-');
@@ -57,7 +56,6 @@ function formatFecha(dateStr) {
   return `${parseInt(d)} ${meses[parseInt(m) - 1]}`;
 }
 
-// Calcular noches entre dos fechas string "YYYY-MM-DD"
 function calcularNoches(desde, hasta) {
   if (!desde || !hasta) return 0;
   const d1 = new Date(desde);
@@ -66,7 +64,6 @@ function calcularNoches(desde, hasta) {
   return diff > 0 ? diff : 0;
 }
 
-// Generar array de fechas entre dos fechas (sin incluir extremos)
 function getFechasEntre(desde, hasta) {
   const result = [];
   const d = new Date(desde);
@@ -77,6 +74,88 @@ function getFechasEntre(desde, hasta) {
     d.setDate(d.getDate() + 1);
   }
   return result;
+}
+
+// ── Botón de pago MercadoPago ───────────────────────────────
+function BtnPagar({ propiedad, fechaInicio, fechaFin, noches, total }) {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handlePagar = async () => {
+    const user = auth.currentUser;
+    if (!user) {
+      window.location.href = '/login';
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+
+    try {
+      const res = await fetch('/api/pagos/crear', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          propiedadId: propiedad.id,
+          titulo: propiedad.titulo,
+          ubicacion: propiedad.ubicacion,
+          fechaInicio,
+          fechaFin,
+          noches,
+          precioPorNoche: propiedad.precioPorNoche,
+          total,
+          userEmail: user.email,
+          userName: user.displayName || '',
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error al crear preferencia');
+
+      window.location.href = data.init_point;
+
+    } catch (err) {
+      setError('No se pudo iniciar el pago. Intentá de nuevo.');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div>
+      <button
+        onClick={handlePagar}
+        disabled={loading}
+        style={{
+          display: 'block',
+          width: '100%',
+          background: loading ? '#ccc' : '#009ee3',
+          color: 'white',
+          border: 'none',
+          padding: '0.95rem',
+          borderRadius: '8px',
+          fontWeight: 700,
+          fontSize: '1rem',
+          cursor: loading ? 'not-allowed' : 'pointer',
+          fontFamily: 'inherit',
+          transition: 'all 0.2s',
+        }}
+      >
+        {loading ? '⏳ Redirigiendo...' : `💳 Reservar y pagar $${total} USD`}
+      </button>
+      {error && (
+        <p style={{
+          color: 'var(--color-danger)',
+          fontSize: '0.82rem',
+          marginTop: '0.5rem',
+          textAlign: 'center'
+        }}>
+          {error}
+        </p>
+      )}
+    </div>
+  );
 }
 
 // ── Calendario con selección de rango ──────────────────────
@@ -106,7 +185,6 @@ function CalendarioReserva({ fechasOcupadas = [], precioPorNoche, onRangoChange 
   const esPasado = (str) => str < hoyStr;
   const esOcupado = (str) => fechasOcupadas.includes(str);
   const esHoy = (str) => str === hoyStr;
-
   const esInicio = (str) => str === fechaInicio;
   const esFin = (str) => str === fechaFin;
 
@@ -117,7 +195,6 @@ function CalendarioReserva({ fechasOcupadas = [], precioPorNoche, onRangoChange 
     return str > a && str < b;
   };
 
-  // Verificar si hay alguna fecha ocupada en el rango seleccionado
   const hayOcupadoEnRango = (desde, hasta) => {
     const fechas = getFechasEntre(desde, hasta);
     return fechas.some(f => fechasOcupadas.includes(f));
@@ -127,14 +204,12 @@ function CalendarioReserva({ fechasOcupadas = [], precioPorNoche, onRangoChange 
     if (esPasado(str) || esOcupado(str)) return;
 
     if (!fechaInicio || (fechaInicio && fechaFin)) {
-      // Empezar selección nueva
       setFechaInicio(str);
       setFechaFin(null);
       onRangoChange(str, null);
       return;
     }
 
-    // Tenemos inicio, falta fin
     if (str <= fechaInicio) {
       setFechaInicio(str);
       setFechaFin(null);
@@ -142,9 +217,7 @@ function CalendarioReserva({ fechasOcupadas = [], precioPorNoche, onRangoChange 
       return;
     }
 
-    // Verificar que no haya ocupados en el rango
     if (hayOcupadoEnRango(fechaInicio, str)) {
-      // Resetear y empezar de esta fecha
       setFechaInicio(str);
       setFechaFin(null);
       onRangoChange(str, null);
@@ -159,7 +232,6 @@ function CalendarioReserva({ fechasOcupadas = [], precioPorNoche, onRangoChange 
     year > hoy.getFullYear() || month > hoy.getMonth();
 
   const celdas = [];
-  // Celdas vacías inicio
   for (let i = 0; i < primerDia; i++) {
     celdas.push(<div key={`e-${i}`} className={styles.calCelda} />);
   }
@@ -228,7 +300,6 @@ function CalendarioReserva({ fechasOcupadas = [], precioPorNoche, onRangoChange 
         {celdas}
       </div>
 
-      {/* Leyenda */}
       <div className={styles.calLeyenda}>
         <div className={styles.calLeyendaItem}>
           <div className={`${styles.calLeyendaDot} ${styles.dotDisponible}`} />
@@ -244,7 +315,6 @@ function CalendarioReserva({ fechasOcupadas = [], precioPorNoche, onRangoChange 
         </div>
       </div>
 
-      {/* Resumen selección */}
       {fechaInicio && !fechaFin && (
         <div className={styles.calInfo}>
           <span>📅 Seleccioná la fecha de salida</span>
@@ -310,25 +380,27 @@ function GaleriaSlider({ fotos, titulo }) {
 
   return (
     <>
-      {/* Lightbox */}
       {lightbox && (
         <div className={styles.lightbox} onClick={() => setLightbox(false)}>
           <button className={styles.lightboxClose} onClick={() => setLightbox(false)}>✕</button>
-          <button className={`${styles.lightboxArrow} ${styles.lightboxLeft}`}
-            onClick={(e) => { e.stopPropagation(); prev(); }}>‹</button>
+          <button
+            className={`${styles.lightboxArrow} ${styles.lightboxLeft}`}
+            onClick={(e) => { e.stopPropagation(); prev(); }}
+          >‹</button>
           <img
             src={fotos[idx]}
             alt={`${titulo} — foto ${idx + 1}`}
             className={styles.lightboxImg}
             onClick={(e) => e.stopPropagation()}
           />
-          <button className={`${styles.lightboxArrow} ${styles.lightboxRight}`}
-            onClick={(e) => { e.stopPropagation(); next(); }}>›</button>
+          <button
+            className={`${styles.lightboxArrow} ${styles.lightboxRight}`}
+            onClick={(e) => { e.stopPropagation(); next(); }}
+          >›</button>
           <div className={styles.lightboxCounter}>{idx + 1} / {fotos.length}</div>
         </div>
       )}
 
-      {/* Slider principal */}
       <div className={styles.slider}>
         <div className={styles.sliderTrack}>
           <img
@@ -339,7 +411,6 @@ function GaleriaSlider({ fotos, titulo }) {
           />
         </div>
 
-        {/* Flechas */}
         {fotos.length > 1 && (
           <>
             <button className={`${styles.sliderArrow} ${styles.sliderLeft}`} onClick={prev}>‹</button>
@@ -347,7 +418,6 @@ function GaleriaSlider({ fotos, titulo }) {
           </>
         )}
 
-        {/* Contador y botón ver todas */}
         <div className={styles.sliderBottom}>
           <span className={styles.sliderCounter}>{idx + 1} / {fotos.length}</span>
           <button className={styles.sliderVerTodas} onClick={() => setLightbox(true)}>
@@ -355,7 +425,6 @@ function GaleriaSlider({ fotos, titulo }) {
           </button>
         </div>
 
-        {/* Dots */}
         {fotos.length > 1 && fotos.length <= 10 && (
           <div className={styles.sliderDots}>
             {fotos.map((_, i) => (
@@ -369,7 +438,6 @@ function GaleriaSlider({ fotos, titulo }) {
         )}
       </div>
 
-      {/* Miniaturas */}
       {fotos.length > 1 && (
         <div className={styles.thumbsRow}>
           {fotos.map((url, i) => (
@@ -393,8 +461,6 @@ export default function PropiedadDetalle() {
   const [propiedad, setPropiedad] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
-
-  // Rango de fechas seleccionado
   const [fechaInicio, setFechaInicio] = useState(null);
   const [fechaFin, setFechaFin] = useState(null);
 
@@ -406,18 +472,16 @@ export default function PropiedadDetalle() {
           setError(true);
         } else {
           setPropiedad(data);
-
-// Trackear vista de propiedad en Google Analytics
-if (typeof window !== 'undefined' && window.gtag) {
-  window.gtag('event', 'view_item', {
-    item_id: id,
-    item_name: data.titulo,
-    item_category: data.tipoPropiedad || 'Propiedad',
-    item_location: data.ubicacion,
-    price: Number(data.precioPorNoche) || 0,
-    currency: 'USD',
-  })
-}
+          if (typeof window !== 'undefined' && window.gtag) {
+            window.gtag('event', 'view_item', {
+              item_id: id,
+              item_name: data.titulo,
+              item_category: data.tipoPropiedad || 'Propiedad',
+              item_location: data.ubicacion,
+              price: Number(data.precioPorNoche) || 0,
+              currency: 'USD',
+            });
+          }
         }
       } catch {
         setError(true);
@@ -459,7 +523,6 @@ if (typeof window !== 'undefined' && window.gtag) {
   const noches = calcularNoches(fechaInicio, fechaFin);
   const total = noches * precio;
 
-  // Mensaje WhatsApp con fechas si están seleccionadas
   const buildWAMsg = () => {
     let msg = `Hola! Me interesa la propiedad "${propiedad.titulo}" en ${propiedad.ubicacion}.`;
     if (fechaInicio && fechaFin) {
@@ -472,18 +535,16 @@ if (typeof window !== 'undefined' && window.gtag) {
 
   return (
     <div className={styles.page}>
-      {/* ── Galería ── */}
+
       <div className={styles.galeriaSection}>
         <GaleriaSlider fotos={fotos} titulo={propiedad.titulo} />
       </div>
 
-      {/* ── Layout 2 columnas ── */}
       <div className={styles.contenido}>
 
         {/* Columna izquierda */}
         <div className={styles.columnaIzq}>
 
-          {/* Breadcrumb */}
           <nav className={styles.breadcrumb}>
             <Link href="/">Inicio</Link>
             <span>›</span>
@@ -492,7 +553,6 @@ if (typeof window !== 'undefined' && window.gtag) {
             <span>{propiedad.titulo}</span>
           </nav>
 
-          {/* Encabezado */}
           <div className={styles.encabezado}>
             <div className={styles.badges}>
               {propiedad.tipoPropiedad && (
@@ -504,7 +564,6 @@ if (typeof window !== 'undefined' && window.gtag) {
             <p className={styles.ubicacion}>📍 {propiedad.ubicacion}</p>
           </div>
 
-          {/* Capacidad */}
           <div className={styles.capacidadGrid}>
             {[
               { icon: '👥', label: 'Huéspedes', value: propiedad.huespedes },
@@ -524,7 +583,6 @@ if (typeof window !== 'undefined' && window.gtag) {
 
           <hr className={styles.divider} />
 
-          {/* Descripción */}
           {propiedad.descripcion && (
             <div className={styles.seccion}>
               <h2 className={styles.seccionTitulo}>Sobre esta propiedad</h2>
@@ -532,7 +590,6 @@ if (typeof window !== 'undefined' && window.gtag) {
             </div>
           )}
 
-          {/* Amenities */}
           {propiedad.amenities?.length > 0 && (
             <div className={styles.seccion}>
               <h2 className={styles.seccionTitulo}>Qué ofrece este lugar</h2>
@@ -549,7 +606,6 @@ if (typeof window !== 'undefined' && window.gtag) {
 
           <hr className={styles.divider} />
 
-          {/* Info adicional */}
           <div className={styles.seccion}>
             <h2 className={styles.seccionTitulo}>Información adicional</h2>
             <div className={styles.infoGrid}>
@@ -582,17 +638,15 @@ if (typeof window !== 'undefined' && window.gtag) {
 
         </div>
 
-        {/* ── Columna derecha fija ── */}
+        {/* Columna derecha fija */}
         <div className={styles.columnaDer}>
           <div className={styles.reservaCard}>
 
-            {/* Precio */}
             <div className={styles.reservaPrecio}>
               <span className={styles.reservaPrecioValor}>${precio}</span>
               <span className={styles.reservaPrecioLabel}> USD / noche</span>
             </div>
 
-            {/* Capacidad resumida */}
             <div className={styles.reservaCapacidad}>
               <span>👥 {propiedad.huespedes} huéspedes</span>
               <span>·</span>
@@ -603,72 +657,77 @@ if (typeof window !== 'undefined' && window.gtag) {
 
             <hr className={styles.reservaDivider} />
 
-            {/* Instrucción */}
             <p className={styles.calInstruccion}>
               Seleccioná las fechas para ver el precio total:
             </p>
 
-            {/* Calendario */}
             <CalendarioReserva
               fechasOcupadas={fechasOcupadas}
               precioPorNoche={precio}
-              onRangoChange={(ini, fin) => { setFechaInicio(ini); setFechaFin(fin); }}
+              onRangoChange={(ini, fin) => {
+                setFechaInicio(ini);
+                setFechaFin(fin);
+              }}
             />
 
             <hr className={styles.reservaDivider} />
 
-            {/* Botón pagar — solo si hay fechas seleccionadas */}
-{fechaInicio && fechaFin ? (
-  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1rem' }}>
-    <BtnPagar
-      propiedad={propiedad}
-      fechaInicio={fechaInicio}
-      fechaFin={fechaFin}
-      noches={noches}
-      total={total}
-    />
-    <a
-      href={`https://wa.me/59895532294?text=${buildWAMsg()}`}
-      target="_blank"
-      rel="noopener noreferrer"
-      style={{
-        display: 'block',
-        background: 'white',
-        color: '#25D366',
-        border: '2px solid #25D366',
-        textAlign: 'center',
-        padding: '0.75rem',
-        borderRadius: '8px',
-        fontWeight: 700,
-        fontSize: '0.9rem',
-        textDecoration: 'none',
-      }}
-    >
-      💬 Consultar por WhatsApp
-    </a>
-  </div>
-) : (
-  <a
-    href={`https://wa.me/59895532294?text=${buildWAMsg()}`}
-    target="_blank"
-    rel="noopener noreferrer"
-    className={styles.btnReserva}
-  >
-    💬 Seleccioná fechas para reservar
-  </a>
-)}
+            {fechaInicio && fechaFin ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1rem' }}>
+                <BtnPagar
+                  propiedad={propiedad}
+                  fechaInicio={fechaInicio}
+                  fechaFin={fechaFin}
+                  noches={noches}
+                  total={total}
+                />
+                <a
+                  href={`https://wa.me/59895532294?text=${buildWAMsg()}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    display: 'block',
+                    background: 'white',
+                    color: '#25D366',
+                    border: '2px solid #25D366',
+                    textAlign: 'center',
+                    padding: '0.75rem',
+                    borderRadius: '8px',
+                    fontWeight: 700,
+                    fontSize: '0.9rem',
+                    textDecoration: 'none',
+                  }}
+                >
+                  💬 Consultar por WhatsApp
+                </a>
+              </div>
+            ) : (
+              <a
+                href={`https://wa.me/59895532294?text=${buildWAMsg()}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={styles.btnReserva}
+                style={{ marginBottom: '1rem' }}
+              >
+                💬 Seleccioná fechas para reservar
+              </a>
+            )}
+
+            <div className={styles.reservaGestionado}>
               <span>🏆</span>
               <div>
                 <strong>Gestionado por Alquilala</strong>
                 <p>Atención profesional, check-in y limpieza incluidos</p>
               </div>
             </div>
+
           </div>
 
           <Link href="/#propiedades" className={styles.btnVolver}>
             ← Ver más propiedades
           </Link>
         </div>
+
       </div>
     </div>
   );
