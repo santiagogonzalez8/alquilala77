@@ -1,12 +1,21 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { auth } from '@/lib/firebase';
+import { onAuthStateChanged } from 'firebase/auth';
+import BtnContrato from '@/components/BtnContrato';
 
-export default function ReservaConfirmada() {
+function ReservaConfirmadaContenido() {
   const searchParams = useSearchParams();
   const [datos, setDatos] = useState(null);
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, (u) => setUser(u));
+    return () => unsub();
+  }, []);
 
   useEffect(() => {
     const paymentId = searchParams.get('payment_id');
@@ -22,11 +31,10 @@ export default function ReservaConfirmada() {
       }
     }
 
-    // Trackear conversión en Google Analytics
+    // Trackear conversión GA
     if (typeof window !== 'undefined' && window.gtag) {
       window.gtag('event', 'purchase', {
         transaction_id: paymentId,
-        value: datos?.total || 0,
         currency: 'USD',
       });
     }
@@ -46,16 +54,26 @@ export default function ReservaConfirmada() {
         background: 'white',
         borderRadius: '16px',
         padding: '3rem 2.5rem',
-        maxWidth: '520px',
+        maxWidth: '560px',
         width: '100%',
         textAlign: 'center',
         boxShadow: '0 8px 40px rgba(0,0,0,0.1)',
       }}>
         <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🎉</div>
-        <h1 style={{ color: 'var(--color-primary)', fontSize: '1.75rem', fontWeight: 800, marginBottom: '0.5rem' }}>
+        <h1 style={{
+          color: 'var(--color-primary)',
+          fontSize: '1.75rem',
+          fontWeight: 800,
+          marginBottom: '0.5rem',
+        }}>
           ¡Reserva confirmada!
         </h1>
-        <p style={{ color: 'var(--color-text-light)', fontSize: '1rem', marginBottom: '2rem', lineHeight: 1.6 }}>
+        <p style={{
+          color: 'var(--color-text-light)',
+          fontSize: '1rem',
+          marginBottom: '2rem',
+          lineHeight: 1.6,
+        }}>
           Tu pago fue procesado exitosamente. Te enviamos los detalles por email.
         </p>
 
@@ -92,11 +110,38 @@ export default function ReservaConfirmada() {
               </div>
             )}
             {datos.total && (
-              <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: '0.75rem', borderTop: '1px solid var(--color-border-light)' }}>
+              <div style={{
+                display: 'flex', justifyContent: 'space-between',
+                paddingTop: '0.75rem',
+                borderTop: '1px solid var(--color-border-light)',
+              }}>
                 <span style={{ color: 'var(--color-primary)', fontWeight: 700 }}>Total pagado</span>
-                <span style={{ color: 'var(--color-primary)', fontWeight: 800, fontSize: '1.1rem' }}>${datos.total} USD</span>
+                <span style={{ color: 'var(--color-primary)', fontWeight: 800, fontSize: '1.1rem' }}>
+                  ${datos.total} USD
+                </span>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Botón descargar contrato */}
+        {datos && user && (
+          <div style={{ marginBottom: '1rem' }}>
+            <BtnContrato
+              reserva={{
+                id: datos.paymentId,
+                fechaCheckIn: datos.fechaInicio,
+                fechaCheckOut: datos.fechaFin,
+                noches: datos.noches,
+                precioTotal: datos.total,
+                propiedadId: datos.propiedadId,
+                metodoPago: 'mercadopago',
+                pagoId: datos.paymentId,
+              }}
+              propiedad={{ titulo: datos.propiedadId }}
+              userName={user.displayName || ''}
+              userEmail={user.email || ''}
+            />
           </div>
         )}
 
@@ -124,5 +169,20 @@ export default function ReservaConfirmada() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function ReservaConfirmada() {
+  return (
+    <Suspense fallback={
+      <div style={{
+        minHeight: '100vh', display: 'flex',
+        alignItems: 'center', justifyContent: 'center',
+      }}>
+        <div className="loading-spinner" />
+      </div>
+    }>
+      <ReservaConfirmadaContenido />
+    </Suspense>
   );
 }

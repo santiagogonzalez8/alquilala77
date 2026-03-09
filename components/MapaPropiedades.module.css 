@@ -1,0 +1,154 @@
+/* Importar CSS de Leaflet */
+@import 'leaflet/dist/leaflet.css';
+
+.mapaWrapper {
+  position: relative;
+  width: 100%;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid var(--color-border-light);
+  box-shadow: var(--shadow-md);
+}
+
+.mapaContenedor {
+  width: 100%;
+  
+}
+
+.mapaLoading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  background: var(--color-bg-warm);
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+  border-radius: 16px;
+}
+
+.mapaEmpty {
+  position: absolute;
+  bottom: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  box-shadow: var(--shadow-md);
+  z-index: 10;
+}
+
+/* Card propiedad seleccionada */
+.propCard {
+  position: absolute;
+  bottom: 1.5rem;
+  left: 1.5rem;
+  width: 280px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+  z-index: 1000;
+  overflow: hidden;
+  animation: slideUp 0.2s ease;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(10px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.propCardClose {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  background: rgba(0,0,0,0.5);
+  color: white;
+  border: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+}
+
+.propCardImg {
+  width: 100%;
+  height: 140px;
+  object-fit: cover;
+}
+
+.propCardBody {
+  padding: 0.875rem;
+}
+
+.propCardTitulo {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  margin-bottom: 0.25rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.propCardUbicacion {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  margin-bottom: 0.5rem;
+}
+
+.propCardDetalles {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  font-size: 0.75rem;
+  color: var(--color-text-light);
+  margin-bottom: 0.75rem;
+}
+
+.propCardFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.propCardPrecio {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--color-primary);
+}
+
+.propCardPrecioLabel {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--color-text-muted);
+}
+
+.propCardBtn {
+  background: var(--color-primary);
+  color: white;
+  padding: 0.45rem 1rem;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 0.82rem;
+  transition: background 0.2s;
+}
+
+.propCardBtn:hover { background: var(--color-primary-light); }
+
+@media (max-width: 600px) {
+  .propCard {
+    left: 1rem;
+    right: 1rem;
+    width: auto;
+    bottom: 1rem;
+  }
+}

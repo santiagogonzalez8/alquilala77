@@ -10,6 +10,8 @@ import AdminCalendario from '@/components/admin/AdminCalendario';
 import AdminTareas from '@/components/admin/AdminTareas';
 import AdminTickets from '@/components/admin/AdminTickets';
 import AdminUsuarios from '@/components/admin/AdminUsuarios';
+import AdminResenas from '@/components/admin/AdminResenas';
+import AdminPrecios from '@/components/admin/AdminPrecios';
 import styles from './admin.module.css';
 
 export default function AdminPanel() {
@@ -59,12 +61,14 @@ export default function AdminPanel() {
   }, [router, cargarTodo]);
 
   const menuItems = [
-    { key: 'dashboard', icon: '📊', label: 'Dashboard' },
+    { key: 'dashboard',   icon: '📊', label: 'Dashboard' },
     { key: 'propiedades', icon: '🏠', label: 'Propiedades', count: propiedades.length },
-    { key: 'calendario', icon: '📅', label: 'Calendario' },
-    { key: 'tareas', icon: '🧹', label: 'Tareas', count: tareas.filter(t => t.estado !== 'completada').length },
-    { key: 'tickets', icon: '💬', label: 'Soporte', count: tickets.filter(t => t.estado === 'pendiente').length },
-    { key: 'usuarios', icon: '👥', label: 'Usuarios', count: usuarios.length },
+    { key: 'calendario',  icon: '📅', label: 'Calendario' },
+    { key: 'precios',     icon: '💰', label: 'Precios' },
+    { key: 'resenas',     icon: '⭐', label: 'Reseñas' },
+    { key: 'tareas',      icon: '🧹', label: 'Tareas', count: tareas.filter(t => t.estado !== 'completada').length },
+    { key: 'tickets',     icon: '💬', label: 'Soporte', count: tickets.filter(t => t.estado === 'pendiente').length },
+    { key: 'usuarios',    icon: '👥', label: 'Usuarios', count: usuarios.length },
   ];
 
   const handleSeccion = (key) => {
@@ -135,21 +139,30 @@ export default function AdminPanel() {
 
       <main className={styles.mainContent}>
         <div className={styles.topBar}>
-          <button onClick={() => setSidebarOpen(true)} className={styles.menuToggle} aria-label="Abrir menú">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className={styles.menuToggle}
+            aria-label="Abrir menú"
+          >
             <span></span><span></span><span></span>
           </button>
           <h1 className={styles.topBarTitle}>
             {menuItems.find(m => m.key === seccion)?.icon}{' '}
             {menuItems.find(m => m.key === seccion)?.label}
           </h1>
-          <button onClick={cargarTodo} className={styles.refreshBtn} aria-label="Actualizar">🔄</button>
+          <button onClick={cargarTodo} className={styles.refreshBtn} aria-label="Actualizar">
+            🔄
+          </button>
         </div>
 
         <div className={styles.contentArea}>
           {seccion === 'dashboard' && (
             <AdminDashboard
-              propiedades={propiedades} reservas={reservas}
-              tickets={tickets} tareas={tareas} usuarios={usuarios}
+              propiedades={propiedades}
+              reservas={reservas}
+              tickets={tickets}
+              tareas={tareas}
+              usuarios={usuarios}
               onNavigate={setSeccion}
             />
           )}
@@ -158,6 +171,12 @@ export default function AdminPanel() {
           )}
           {seccion === 'calendario' && (
             <AdminCalendario propiedades={propiedades} reservas={reservas} onRefresh={cargarTodo} />
+          )}
+          {seccion === 'precios' && (
+            <AdminPrecios propiedades={propiedades} onRefresh={cargarTodo} />
+          )}
+          {seccion === 'resenas' && (
+            <AdminResenas propiedades={propiedades} />
           )}
           {seccion === 'tareas' && (
             <AdminTareas tareas={tareas} propiedades={propiedades} onRefresh={cargarTodo} />

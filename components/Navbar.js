@@ -15,7 +15,7 @@ import styles from './Navbar.module.css'
 export default function Navbar({ user }) {
   const router = useRouter()
   const pathname = usePathname()
-  const { t, idiomaActual, monedaActual } = useApp()
+  const { t } = useApp()
   const [menuOpen, setMenuOpen] = useState(false)
   const [modalIdiomaOpen, setModalIdiomaOpen] = useState(false)
   const [userData, setUserData] = useState(null)
@@ -73,7 +73,6 @@ export default function Navbar({ user }) {
 
   return (
     <>
-      {/* Modal idioma/moneda */}
       {modalIdiomaOpen && (
         <IdiomaMonedaModal onClose={() => setModalIdiomaOpen(false)} />
       )}
@@ -100,7 +99,7 @@ export default function Navbar({ user }) {
             </div>
           )}
 
-          {/* Links desktop */}
+          {/* Links desktop — solo en home */}
           {!mostrarSearch && (
             <div className={styles.navLinks}>
               <Link href="/#como-funciona" className={styles.navLink}>{t('como_funciona')}</Link>
@@ -112,17 +111,6 @@ export default function Navbar({ user }) {
 
           {/* Derecha */}
           <div className={styles.navRight}>
-
-            {/* Botón idioma/moneda */}
-            <button
-              className={styles.btnIdiomaMoneda}
-              onClick={() => setModalIdiomaOpen(true)}
-              title="Idioma y moneda"
-            >
-              <span className={styles.btnIdiomaFlag}>{idiomaActual?.flag}</span>
-              <span className={styles.btnMonedaCodigo}>{monedaActual?.code}</span>
-            </button>
-
             {user ? (
               <>
                 {isAdmin(user.email) && (
@@ -205,12 +193,16 @@ export default function Navbar({ user }) {
                 <span>💬</span> {t('contactanos')}
               </Link>
 
-              {/* Idioma/moneda en el menú también */}
               <div className={styles.divider} />
+
+              {/* Idioma y moneda dentro del menú */}
               <button
                 className={styles.menuItem}
                 onClick={() => { setMenuOpen(false); setModalIdiomaOpen(true) }}
-                style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}
+                style={{
+                  width: '100%', background: 'none', border: 'none',
+                  cursor: 'pointer', fontFamily: 'inherit',
+                }}
               >
                 <span>🌐</span> Idioma y moneda
               </button>

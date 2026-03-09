@@ -5,19 +5,22 @@ import { auth, firestoreGetAll } from '@/lib/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import Link from 'next/link';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import BtnContrato from '@/components/BtnContrato';
 import styles from './misreservas.module.css';
 
 function MisReservasContenido() {
   const [reservas, setReservas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filtroEstado, setFiltroEstado] = useState('todos');
+  const [user, setUser] = useState(null);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (!user) return;
+    const unsubscribe = onAuthStateChanged(auth, async (u) => {
+      if (!u) return;
+      setUser(u);
       try {
         const data = await firestoreGetAll('reservas', [
-          { field: 'userEmail', op: 'EQUAL', value: user.email }
+          { field: 'userEmail', op: 'EQUAL', value: u.email }
         ]);
         setReservas(data);
       } catch (error) {
@@ -54,7 +57,7 @@ function MisReservasContenido() {
           <h1 className={styles.headerTitle}>Mis Reservas</h1>
           <p className={styles.headerSubtitle}>
             {reservas.length} {reservas.length === 1 ? 'reserva' : 'reservas'} en total
-            {totalIngresos > 0 && ` • $${totalIngresos.toLocaleString('es-UY')} en ingresos confirmados`}
+            {totalIngresos > 0 && ` · $${totalIngresos} USD en reservas confirmadas`}
           </p>
         </div>
       </div>
@@ -84,7 +87,7 @@ function MisReservasContenido() {
           <div className={styles.emptyState}>
             <div className={styles.emptyIcon}>📅</div>
             <h3>No tenés reservas todavía</h3>
-            <p>Las reservas de tus propiedades aparecerán acá cuando los huéspedes reserven.</p>
+            <p>Las reservas aparecerán acá cuando completes una reserva.</p>
             <Link href="/" className={styles.ctaBtn}>Ir al inicio</Link>
           </div>
         ) : filtradas.length === 0 ? (
@@ -98,30 +101,57 @@ function MisReservasContenido() {
               return (
                 <div key={r.id} className={styles.card}>
                   <div className={styles.cardHeader}>
-                    <h3 className={styles.cardTitle}>{r.propiedad || r.propiedadId || 'Propiedad'}</h3>
-                    <span className={`${styles.badge} ${estadoInfo.class}`}>{estadoInfo.label}</span>
+                    <h3 className={styles.cardTitle}>
+                      {r.propiedad || r.propiedadId || 'Propiedad'}
+                    </h3>
+                    <span className={`${styles.badge} ${estadoInfo.class}`}>
+                      {estadoInfo.label}
+                    </span>
                   </div>
                   <div className={styles.cardBody}>
                     <div className={styles.dateRow}>
                       <div className={styles.dateBlock}>
                         <span className={styles.dateLabel}>Check-in</span>
-                        <span className={styles.dateValue}>{r.fechaCheckIn || r.fecha || '—'}</span>
+                        <span className={styles.dateValue}>
+                          {r.fechaCheckIn || r.fecha || '—'}
+                        </span>
                       </div>
                       <div className={styles.dateArrow}>→</div>
                       <div className={styles.dateBlock}>
                         <span className={styles.dateLabel}>Check-out</span>
-                        <span className={styles.dateValue}>{r.fechaCheckOut || '—'}</span>
+                        <span className={styles.dateValue}>
+                          {r.fechaCheckOut || '—'}
+                        </span>
                       </div>
                     </div>
                     <div className={styles.detailsRow}>
-                      {r.noches && <span className={styles.detail}>🌙 {r.noches} noches</span>}
-                      {r.nombreHuesped && <span className={styles.detail}>👤 {r.nombreHuesped}</span>}
-                      {r.metodoPago && <span className={styles.detail}>💳 {r.metodoPago}</span>}
+                      {r.noches && (
+                        <span className={styles.detail}>🌙 {r.noches} noches</span>
+                      )}
+                      {r.nombreHuesped && (
+                        <span className={styles.detail}>👤 {r.nombreHuesped}</span>
+                      )}
+                      {r.metodoPago && (
+                        <span className={styles.detail}>💳 {r.metodoPago}</span>
+                      )}
                     </div>
                     {r.precioTotal && (
                       <div className={styles.totalRow}>
                         <span className={styles.totalLabel}>Total</span>
                         <span className={styles.totalValue}>${r.precioTotal} USD</span>
+                      </div>
+                    )}
+
+                    {/* Botón contrato */}
+                    {r.estado === 'confirmada' && (
+                      <div style={{ marginTop: '0.875rem' }}>
+                        <BtnContrato
+                          reserva={r}
+                          propiedad={{ titulo: r.propiedad || r.propiedadId }}
+                          userName={user?.displayName || ''}
+                          userEmail={user?.email || ''}
+                          variant="outline"
+                        />
                       </div>
                     )}
                   </div>

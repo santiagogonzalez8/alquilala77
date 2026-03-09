@@ -1,12 +1,25 @@
 'use client'
 
 import { useEffect, useState, useRef } from 'react'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { auth } from '@/lib/firebase'
-import { firestoreGetPublic } from '@/lib/firebase'
-import { isAdmin } from '@/lib/adminConfig'
+import { auth, firestoreGetPublic } from '@/lib/firebase'
+import dynamic from 'next/dynamic'
 import styles from './page.module.css'
+
+// Importar mapa dinámicamente para evitar errores SSR
+const MapaPropiedades = dynamic(
+  () => import('@/components/MapaPropiedades'),
+  { ssr: false, loading: () => (
+    <div style={{
+      height: '450px', background: 'var(--color-bg-warm)',
+      borderRadius: '16px', display: 'flex',
+      alignItems: 'center', justifyContent: 'center',
+      color: 'var(--color-text-muted)', fontSize: '0.9rem',
+    }}>
+      Cargando mapa...
+    </div>
+  )}
+)
 
 function useOnScreen(ref, threshold = 0.15) {
   const [isVisible, setIsVisible] = useState(false)
@@ -42,10 +55,10 @@ function StaggerGrid({ children, className = '' }) {
 }
 
 export default function Home() {
-  const router = useRouter()
   const [user, setUser] = useState(null)
   const [currentSlide, setCurrentSlide] = useState(0)
   const [propiedades, setPropiedades] = useState([])
+  const [vistaMap, setVistaMap] = useState(false)
 
   const slides = [
     { name: 'Punta del Este', image: 'https://www.mejoruruguay.com/wp-content/uploads/2025/04/Puerto-Punta.webp', position: 'center' },
@@ -53,7 +66,7 @@ export default function Home() {
     { name: 'Punta del Diablo', image: 'https://images.trvl-media.com/place/6144089/c9fc188e-8ec8-47ef-86ad-3e9c9a9eb8dd.jpg', position: 'center' },
     { name: 'La Paloma', image: 'https://content.r9cdn.net/rimg/dimg/9f/96/f2478ec8-city-67086-172920a6c3d.jpg?crop=true&width=1366&height=768&xhint=3930&yhint=1459', position: 'center' },
     { name: 'Colonia del Sacramento', image: 'https://www.guruguay.com/wp-content/uploads/2021/05/colonia_del_sacramento_de_los_suspiros_street_night.png', position: 'center' },
-    { name: 'Punta Negra', image: 'https://pbs.twimg.com/media/G5pSA0zWMAAxd2v.jpg', position: 'bottom right' }
+    { name: 'Punta Negra', image: 'https://pbs.twimg.com/media/G5pSA0zWMAAxd2v.jpg', position: 'bottom right' },
   ]
 
   useEffect(() => {
@@ -64,7 +77,9 @@ export default function Home() {
   }, [slides.length])
 
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((currentUser) => { setUser(currentUser) })
+    const unsubscribe = auth.onAuthStateChanged((currentUser) => {
+      setUser(currentUser)
+    })
     return () => unsubscribe()
   }, [])
 
@@ -74,7 +89,7 @@ export default function Home() {
         const props = await firestoreGetPublic(
           'propiedades',
           [{ field: 'estado', op: 'EQUAL', value: 'disponible' }],
-          6
+          12
         )
         setPropiedades(props)
       } catch (error) {
@@ -91,7 +106,7 @@ export default function Home() {
     { icon: '📋', titulo: 'Registrá tu propiedad', desc: 'Completá los datos de tu casa: fotos, ubicación, capacidad y amenities.' },
     { icon: '🚀', titulo: 'Nosotros la publicamos', desc: 'La publicamos en Airbnb, Booking y MercadoLibre con fotos y textos profesionales.' },
     { icon: '🛎️', titulo: 'Gestionamos todo', desc: 'Reservas, calendario, check-in/out, limpieza, mantenimiento y atención al huésped.' },
-    { icon: '💰', titulo: 'Vos cobrás', desc: 'Recibís tus ingresos sin preocuparte por nada. Reportes claros y transparentes.' }
+    { icon: '💰', titulo: 'Vos cobrás', desc: 'Recibís tus ingresos sin preocuparte por nada. Reportes claros y transparentes.' },
   ]
 
   const servicios = [
@@ -100,40 +115,68 @@ export default function Home() {
     { icon: '🧹', titulo: 'Limpieza y mantenimiento', desc: 'Coordinamos limpieza entre huéspedes, cortapasto, reparaciones y todo lo que tu casa necesite.' },
     { icon: '💬', titulo: 'Atención al huésped 24/7', desc: 'Respondemos consultas, gestionamos check-in/out y resolvemos cualquier problema.' },
     { icon: '📊', titulo: 'Reportes de ingresos', desc: 'Dashboard con tus reservas, ingresos y gastos. Todo transparente y en tiempo real.' },
-    { icon: '🔑', titulo: 'Gestión de llaves', desc: 'Coordinamos la entrega y devolución de llaves con cada huésped de forma segura.' }
+    { icon: '🔑', titulo: 'Gestión de llaves', desc: 'Coordinamos la entrega y devolución de llaves con cada huésped de forma segura.' },
   ]
 
   return (
     <div className={styles.home}>
+
       {/* HERO */}
       <section className={styles.hero}>
         {slides.map((slide, index) => (
-          <div key={index} className={styles.heroSlide} style={{
-            backgroundImage: `url(${slide.image})`,
-            backgroundPosition: slide.position || 'center',
-            opacity: currentSlide === index ? 1 : 0
-          }} />
+          <div
+            key={index}
+            className={styles.heroSlide}
+            style={{
+              backgroundImage: `url(${slide.image})`,
+              backgroundPosition: slide.position || 'center',
+              opacity: currentSlide === index ? 1 : 0,
+            }}
+          />
         ))}
         <div className={styles.heroOverlay} />
         <div className={styles.slideName}>📍 {slides[currentSlide].name}</div>
 
         <div className={styles.heroContent}>
-          <h1 className={styles.heroTitle}>Dejá tu propiedad en<br />nuestras manos</h1>
-          <p className={styles.heroSubtitle}>Gestionamos tu alquiler temporal de forma integral.<br />Publicación, reservas, limpieza y atención al huésped.</p>
+          <h1 className={styles.heroTitle}>
+            Dejá tu propiedad en<br />nuestras manos
+          </h1>
+          <p className={styles.heroSubtitle}>
+            Gestionamos tu alquiler temporal de forma integral.<br />
+            Publicación, reservas, limpieza y atención al huésped.
+          </p>
           <div className={styles.heroCtas}>
-            <Link href={user ? '/publicar' : '/login'} className={styles.ctaPrimary}>Publicá tu casa</Link>
-            <a href="#como-funciona" className={styles.ctaSecondary}>¿Cómo funciona?</a>
+            <Link
+              href={user ? '/publicar' : '/login'}
+              className={styles.ctaPrimary}
+            >
+              Publicá tu casa
+            </Link>
+            <a href="#como-funciona" className={styles.ctaSecondary}>
+              ¿Cómo funciona?
+            </a>
           </div>
         </div>
 
-        <button onClick={prevSlide} className={`${styles.heroArrow} ${styles.arrowLeft}`} aria-label="Anterior">‹</button>
-        <button onClick={nextSlide} className={`${styles.heroArrow} ${styles.arrowRight}`} aria-label="Siguiente">›</button>
+        <button
+          onClick={prevSlide}
+          className={`${styles.heroArrow} ${styles.arrowLeft}`}
+          aria-label="Anterior"
+        >‹</button>
+        <button
+          onClick={nextSlide}
+          className={`${styles.heroArrow} ${styles.arrowRight}`}
+          aria-label="Siguiente"
+        >›</button>
 
         <div className={styles.heroDots}>
           {slides.map((_, index) => (
-            <button key={index} onClick={() => setCurrentSlide(index)}
+            <button
+              key={index}
+              onClick={() => setCurrentSlide(index)}
               className={`${styles.dot} ${currentSlide === index ? styles.dotActive : ''}`}
-              aria-label={`Slide ${index + 1}`} />
+              aria-label={`Slide ${index + 1}`}
+            />
           ))}
         </div>
       </section>
@@ -189,67 +232,145 @@ export default function Home() {
       <section id="propiedades" className={`section-padding ${styles.propiedadesSection}`}>
         <div className="container">
           <AnimatedSection>
-            <div style={{ textAlign: 'center' }}>
-              <span className="section-label">Portfolio</span>
-              <h2 className="section-title">Propiedades que gestionamos</h2>
-              <p className="section-subtitle" style={{ margin: '0 auto 3rem' }}>
-                Estas son algunas de las propiedades que ya confían en nosotros.
-              </p>
+            <div style={{
+              display: 'flex',
+              alignItems: 'flex-end',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '1rem',
+              marginBottom: '2.5rem',
+            }}>
+              <div>
+                <span className="section-label">Portfolio</span>
+                <h2 className="section-title" style={{ marginBottom: '0.5rem' }}>
+                  Propiedades que gestionamos
+                </h2>
+                <p className="section-subtitle" style={{ margin: 0 }}>
+                  Estas son algunas de las propiedades que ya confían en nosotros.
+                </p>
+              </div>
+
+              {/* Toggle vista mapa/cards */}
+              {propiedades.length > 0 && (
+                <div style={{
+                  display: 'flex',
+                  background: 'var(--color-bg-warm)',
+                  border: '1px solid var(--color-border-light)',
+                  borderRadius: '8px',
+                  padding: '0.25rem',
+                  gap: '0.25rem',
+                }}>
+                  <button
+                    onClick={() => setVistaMap(false)}
+                    style={{
+                      padding: '0.5rem 1rem',
+                      borderRadius: '6px',
+                      border: 'none',
+                      background: !vistaMap ? 'white' : 'transparent',
+                      color: !vistaMap ? 'var(--color-primary)' : 'var(--color-text-muted)',
+                      fontWeight: !vistaMap ? 700 : 500,
+                      cursor: 'pointer',
+                      fontSize: '0.85rem',
+                      boxShadow: !vistaMap ? 'var(--shadow-sm)' : 'none',
+                      transition: 'all 0.15s',
+                      fontFamily: 'inherit',
+                    }}
+                  >
+                    ⊞ Cards
+                  </button>
+                  <button
+                    onClick={() => setVistaMap(true)}
+                    style={{
+                      padding: '0.5rem 1rem',
+                      borderRadius: '6px',
+                      border: 'none',
+                      background: vistaMap ? 'white' : 'transparent',
+                      color: vistaMap ? 'var(--color-primary)' : 'var(--color-text-muted)',
+                      fontWeight: vistaMap ? 700 : 500,
+                      cursor: 'pointer',
+                      fontSize: '0.85rem',
+                      boxShadow: vistaMap ? 'var(--shadow-sm)' : 'none',
+                      transition: 'all 0.15s',
+                      fontFamily: 'inherit',
+                    }}
+                  >
+                    🗺️ Mapa
+                  </button>
+                </div>
+              )}
             </div>
           </AnimatedSection>
 
           {propiedades.length > 0 ? (
-            <StaggerGrid className={styles.propiedadesGrid}>
-              {propiedades.map((prop) => (
-                <Link
-  key={prop.id}
-  href={`/propiedades/${prop.id}`}
-  className={styles.propiedadCard}
-  onClick={() => {
-    if (typeof window !== 'undefined' && window.gtag) {
-      window.gtag('event', 'select_item', {
-        item_id: prop.id,
-        item_name: prop.titulo,
-        item_location: prop.ubicacion,
-      })
-    }
-  }}
->
-  <div
-    className={styles.propiedadImagen}
-    style={{
-      backgroundImage: prop.imagenes?.[0]
-        ? `url(${prop.imagenes[0]})`
-        : prop.fotoPrincipal
-        ? `url(${prop.fotoPrincipal})`
-        : 'linear-gradient(135deg, #1e3a5f, #2d4a6f)'
-    }}
-  >
-    <span className={styles.propiedadBadge}>Disponible</span>
-  </div>
-  <div className={styles.propiedadInfo}>
-    <h3 className={styles.propiedadTitulo}>{prop.titulo}</h3>
-    <p className={styles.propiedadUbicacion}>📍 {prop.ubicacion}</p>
-    <div className={styles.propiedadDetalles}>
-                      <span>👥 {prop.huespedes} huéspedes</span>
-                      <span>🛏️ {prop.dormitorios} dorm.</span>
-                      <span>🚿 {prop.banos} baños</span>
-                    </div>
-                    <div className={styles.propiedadPrecio}>
-                      <span className={styles.precioValor}>${prop.precioPorNoche}</span>
-                      <span className={styles.precioNoche}>/ noche</span>
-                    </div>
-                  </div>
-                </Link>
-              ))}
-            </StaggerGrid>
+            <>
+              {/* Vista mapa */}
+              {vistaMap && (
+                <AnimatedSection>
+                  <MapaPropiedades
+                    propiedades={propiedades}
+                    altura="520px"
+                  />
+                </AnimatedSection>
+              )}
+
+              {/* Vista cards */}
+              {!vistaMap && (
+                <StaggerGrid className={styles.propiedadesGrid}>
+                  {propiedades.map((prop) => (
+                    <Link
+                      key={prop.id}
+                      href={`/propiedades/${prop.id}`}
+                      className={styles.propiedadCard}
+                      onClick={() => {
+                        if (typeof window !== 'undefined' && window.gtag) {
+                          window.gtag('event', 'select_item', {
+                            item_id: prop.id,
+                            item_name: prop.titulo,
+                            item_location: prop.ubicacion,
+                          })
+                        }
+                      }}
+                    >
+                      <div
+                        className={styles.propiedadImagen}
+                        style={{
+                          backgroundImage: prop.imagenes?.[0]
+                            ? `url(${prop.imagenes[0]})`
+                            : prop.fotoPrincipal
+                            ? `url(${prop.fotoPrincipal})`
+                            : 'linear-gradient(135deg, #1e3a5f, #2d4a6f)',
+                        }}
+                      >
+                        <span className={styles.propiedadBadge}>Disponible</span>
+                      </div>
+                      <div className={styles.propiedadInfo}>
+                        <h3 className={styles.propiedadTitulo}>{prop.titulo}</h3>
+                        <p className={styles.propiedadUbicacion}>📍 {prop.ubicacion}</p>
+                        <div className={styles.propiedadDetalles}>
+                          <span>👥 {prop.huespedes} huéspedes</span>
+                          <span>🛏️ {prop.dormitorios} dorm.</span>
+                          <span>🚿 {prop.banos} baños</span>
+                        </div>
+                        <div className={styles.propiedadPrecio}>
+                          <span className={styles.precioValor}>${prop.precioPorNoche}</span>
+                          <span className={styles.precioNoche}>/ noche</span>
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+                </StaggerGrid>
+              )}
+            </>
           ) : (
             <AnimatedSection>
               <div className={styles.propiedadesEmpty}>
                 <div className={styles.emptyIcon}>🏡</div>
                 <h3>Próximamente</h3>
                 <p>Estamos incorporando propiedades. ¡Sé el primero en publicar la tuya!</p>
-                <Link href={user ? '/publicar' : '/login'} className={styles.ctaPrimary}>
+                <Link
+                  href={user ? '/publicar' : '/login'}
+                  className={styles.ctaPrimary}
+                >
                   Publicá tu propiedad
                 </Link>
               </div>
@@ -263,14 +384,20 @@ export default function Home() {
         <div className="container" style={{ textAlign: 'center' }}>
           <AnimatedSection>
             <h2 className={styles.ctaTitulo}>¿Tenés una propiedad sin explotar?</h2>
-            <p className={styles.ctaSubtitulo}>Dejanos encargarnos de todo. Empezá a generar ingresos con tu casa hoy mismo.</p>
+            <p className={styles.ctaSubtitulo}>
+              Dejanos encargarnos de todo. Empezá a generar ingresos con tu casa hoy mismo.
+            </p>
             <div className={styles.ctaButtons}>
-              <Link href={user ? '/publicar' : '/login'} className={styles.ctaPrimaryLarge}>
+              <Link
+                href={user ? '/publicar' : '/login'}
+                className={styles.ctaPrimaryLarge}
+              >
                 Quiero publicar mi casa
               </Link>
               <a
                 href="https://wa.me/59895532294?text=Hola!%20Quiero%20información%20sobre%20el%20servicio%20de%20gestión%20de%20alquileres"
-                target="_blank" rel="noopener noreferrer"
+                target="_blank"
+                rel="noopener noreferrer"
                 className={styles.ctaWhatsapp}
               >
                 💬 Hablemos por WhatsApp
@@ -279,6 +406,7 @@ export default function Home() {
           </AnimatedSection>
         </div>
       </section>
+
     </div>
   )
 }

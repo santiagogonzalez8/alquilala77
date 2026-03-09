@@ -4,6 +4,8 @@ import { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { firestoreGetPublicById, auth } from '@/lib/firebase';
+import { calcularPrecioTotal, TEMPORADAS } from '@/lib/temporadas';
+import Resenas from '@/components/Resenas';
 import styles from './propiedad.module.css';
 
 const AMENITY_ICONS = {
@@ -87,10 +89,8 @@ function BtnPagar({ propiedad, fechaInicio, fechaFin, noches, total }) {
       window.location.href = '/login';
       return;
     }
-
     setLoading(true);
     setError('');
-
     try {
       const res = await fetch('/api/pagos/crear', {
         method: 'POST',
@@ -108,15 +108,11 @@ function BtnPagar({ propiedad, fechaInicio, fechaFin, noches, total }) {
           userName: user.displayName || '',
         }),
       });
-
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Error al crear preferencia');
-
       window.location.href = data.init_point;
-
     } catch (err) {
       setError('No se pudo iniciar el pago. Intentá de nuevo.');
-      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -128,28 +124,20 @@ function BtnPagar({ propiedad, fechaInicio, fechaFin, noches, total }) {
         onClick={handlePagar}
         disabled={loading}
         style={{
-          display: 'block',
-          width: '100%',
+          display: 'block', width: '100%',
           background: loading ? '#ccc' : '#009ee3',
-          color: 'white',
-          border: 'none',
-          padding: '0.95rem',
-          borderRadius: '8px',
-          fontWeight: 700,
-          fontSize: '1rem',
+          color: 'white', border: 'none', padding: '0.95rem',
+          borderRadius: '8px', fontWeight: 700, fontSize: '1rem',
           cursor: loading ? 'not-allowed' : 'pointer',
-          fontFamily: 'inherit',
-          transition: 'all 0.2s',
+          fontFamily: 'inherit', transition: 'all 0.2s',
         }}
       >
         {loading ? '⏳ Redirigiendo...' : `💳 Reservar y pagar $${total} USD`}
       </button>
       {error && (
         <p style={{
-          color: 'var(--color-danger)',
-          fontSize: '0.82rem',
-          marginTop: '0.5rem',
-          textAlign: 'center'
+          color: 'var(--color-danger)', fontSize: '0.82rem',
+          marginTop: '0.5rem', textAlign: 'center'
         }}>
           {error}
         </p>
@@ -158,8 +146,14 @@ function BtnPagar({ propiedad, fechaInicio, fechaFin, noches, total }) {
   );
 }
 
-// ── Calendario con selección de rango ──────────────────────
-function CalendarioReserva({ fechasOcupadas = [], precioPorNoche, onRangoChange }) {
+// ── Calendario con selección de rango y precios por temporada ──
+function CalendarioReserva({ fechasOcupadas = [], propiedad, onRangoChange }) {
+  const precios = {
+    alta: Number(propiedad?.precioAlta || propiedad?.precioPorNoche || 0),
+    media: Number(propiedad?.precioMedia || propiedad?.precioPorNoche || 0),
+    baja: Number(propiedad?.precioBaja || propiedad?.precioPorNoche || 0),
+  };
+
   const hoy = new Date();
   const hoyStr = hoy.toISOString().split('T')[0];
 
@@ -202,34 +196,48 @@ function CalendarioReserva({ fechasOcupadas = [], precioPorNoche, onRangoChange 
 
   const handleClickDia = (str) => {
     if (esPasado(str) || esOcupado(str)) return;
-
     if (!fechaInicio || (fechaInicio && fechaFin)) {
       setFechaInicio(str);
       setFechaFin(null);
       onRangoChange(str, null);
       return;
     }
-
     if (str <= fechaInicio) {
       setFechaInicio(str);
       setFechaFin(null);
       onRangoChange(str, null);
       return;
     }
-
     if (hayOcupadoEnRango(fechaInicio, str)) {
       setFechaInicio(str);
       setFechaFin(null);
       onRangoChange(str, null);
       return;
     }
-
     setFechaFin(str);
     onRangoChange(fechaInicio, str);
   };
 
   const puedeRetroceder =
     year > hoy.getFullYear() || month > hoy.getMonth();
+
+  // Calcular precio con temporadas
+  const { total, resumen } = fechaInicio && fechaFin
+    ? calcularPrecioTotal(fechaInicio, fechaFin, precios)
+    : { total: 0, resumen: {} };
+
+  const noches = calcularNoches(fechaInicio, fechaFin);
+
+  // Aplicar descuento
+  let totalConDescuento = total;
+  let descuentoAplicado = 0;
+  if (noches >= 28 && propiedad?.descuentoMes > 0) {
+    descuentoAplicado = propiedad.descuentoMes;
+    totalConDescuento = total * (1 - descuentoAplicado / 100);
+  } else if (noches >= 7 && propiedad?.descuentoSemana > 0) {
+    descuentoAplicado = propiedad.descuentoSemana;
+    totalConDescuento = total * (1 - descuentoAplicado / 100);
+  }
 
   const celdas = [];
   for (let i = 0; i < primerDia; i++) {
@@ -268,9 +276,6 @@ function CalendarioReserva({ fechasOcupadas = [], precioPorNoche, onRangoChange 
       </div>
     );
   }
-
-  const noches = calcularNoches(fechaInicio, fechaFin);
-  const total = noches * Number(precioPorNoche || 0);
 
   const limpiarSeleccion = () => {
     setFechaInicio(null);
@@ -335,12 +340,60 @@ function CalendarioReserva({ fechasOcupadas = [], precioPorNoche, onRangoChange 
               <span className={styles.calResumenValor}>{formatFecha(fechaFin)}</span>
             </div>
           </div>
+
+          {/* Desglose por temporada */}
+          {Object.entries(resumen).length > 0 && (
+            <div style={{
+              marginTop: '0.75rem',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.3rem',
+            }}>
+              {Object.entries(resumen).map(([temp, data]) => (
+                <div key={temp} style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  fontSize: '0.8rem',
+                  color: 'var(--color-text-muted)',
+                }}>
+                  <span style={{ color: TEMPORADAS[temp]?.color }}>
+                    ● {TEMPORADAS[temp]?.label} ({data.noches} noche{data.noches !== 1 ? 's' : ''})
+                  </span>
+                  <span>${data.subtotal.toLocaleString('es-UY')}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
           <div className={styles.calResumenTotal}>
             <div className={styles.calResumenCalculo}>
-              <span>${precioPorNoche} × {noches} noche{noches !== 1 ? 's' : ''}</span>
-              <span className={styles.calResumenPrecio}>${total.toLocaleString('es-UY')} USD</span>
+              {descuentoAplicado > 0 ? (
+                <>
+                  <span style={{
+                    textDecoration: 'line-through',
+                    color: 'var(--color-text-muted)',
+                    fontSize: '0.85rem',
+                  }}>
+                    ${total.toLocaleString('es-UY')}
+                  </span>
+                  <span style={{ color: '#22c55e', fontSize: '0.8rem', fontWeight: 700 }}>
+                    -{descuentoAplicado}% descuento
+                  </span>
+                  <span className={styles.calResumenPrecio}>
+                    ${Math.round(totalConDescuento).toLocaleString('es-UY')} USD
+                  </span>
+                </>
+              ) : (
+                <>
+                  <span>{noches} noche{noches !== 1 ? 's' : ''}</span>
+                  <span className={styles.calResumenPrecio}>
+                    ${total.toLocaleString('es-UY')} USD
+                  </span>
+                </>
+              )}
             </div>
           </div>
+
           <button onClick={limpiarSeleccion} className={styles.calLimpiarLink}>
             Cambiar fechas
           </button>
@@ -355,8 +408,14 @@ function GaleriaSlider({ fotos, titulo }) {
   const [idx, setIdx] = useState(0);
   const [lightbox, setLightbox] = useState(false);
 
-  const prev = useCallback(() => setIdx(i => (i - 1 + fotos.length) % fotos.length), [fotos.length]);
-  const next = useCallback(() => setIdx(i => (i + 1) % fotos.length), [fotos.length]);
+  const prev = useCallback(
+    () => setIdx(i => (i - 1 + fotos.length) % fotos.length),
+    [fotos.length]
+  );
+  const next = useCallback(
+    () => setIdx(i => (i + 1) % fotos.length),
+    [fotos.length]
+  );
 
   useEffect(() => {
     if (!lightbox) return;
@@ -521,7 +580,22 @@ export default function PropiedadDetalle() {
   const fechasOcupadas = propiedad.fechasOcupadas || [];
   const precio = Number(propiedad.precioPorNoche || 0);
   const noches = calcularNoches(fechaInicio, fechaFin);
-  const total = noches * precio;
+
+  // Calcular total con temporadas y descuentos
+  const precios = {
+    alta: Number(propiedad?.precioAlta || precio),
+    media: Number(propiedad?.precioMedia || precio),
+    baja: Number(propiedad?.precioBaja || precio),
+  };
+  const { total: totalBase } = calcularPrecioTotal(fechaInicio, fechaFin, precios);
+  const descuento = noches >= 28
+    ? propiedad?.descuentoMes
+    : noches >= 7
+    ? propiedad?.descuentoSemana
+    : 0;
+  const total = descuento > 0
+    ? Math.round(totalBase * (1 - descuento / 100))
+    : totalBase;
 
   const buildWAMsg = () => {
     let msg = `Hola! Me interesa la propiedad "${propiedad.titulo}" en ${propiedad.ubicacion}.`;
@@ -636,6 +710,55 @@ export default function PropiedadDetalle() {
             </div>
           </div>
 
+          <hr className={styles.divider} />
+
+          {/* Precios por temporada */}
+          {(propiedad.precioAlta || propiedad.precioMedia || propiedad.precioBaja) && (
+            <div className={styles.seccion}>
+              <h2 className={styles.seccionTitulo}>Precios por temporada</h2>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                {[
+                  { label: '🔴 Temporada alta', precio: propiedad.precioAlta, desc: 'Dic, ene, feb, semana de turismo' },
+                  { label: '🟡 Temporada media', precio: propiedad.precioMedia, desc: 'Jul, semana santa' },
+                  { label: '🟢 Temporada baja', precio: propiedad.precioBaja || propiedad.precioPorNoche, desc: 'Resto del año' },
+                ].filter(t => t.precio).map(t => (
+                  <div key={t.label} style={{
+                    display: 'flex', justifyContent: 'space-between',
+                    alignItems: 'center', padding: '0.875rem 1rem',
+                    background: 'var(--color-bg-warm)',
+                    borderRadius: '8px',
+                    border: '1px solid var(--color-border-light)',
+                  }}>
+                    <div>
+                      <p style={{ fontWeight: 600, fontSize: '0.9rem', margin: 0 }}>{t.label}</p>
+                      <p style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', margin: 0 }}>{t.desc}</p>
+                    </div>
+                    <span style={{ fontWeight: 800, fontSize: '1.1rem', color: 'var(--color-primary)' }}>
+                      ${t.precio}/noche
+                    </span>
+                  </div>
+                ))}
+                {propiedad.descuentoSemana > 0 && (
+                  <p style={{ fontSize: '0.82rem', color: '#22c55e', fontWeight: 600, margin: 0 }}>
+                    🏷️ {propiedad.descuentoSemana}% de descuento por 7+ noches
+                  </p>
+                )}
+                {propiedad.descuentoMes > 0 && (
+                  <p style={{ fontSize: '0.82rem', color: '#22c55e', fontWeight: 600, margin: 0 }}>
+                    🏷️ {propiedad.descuentoMes}% de descuento por 28+ noches
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+
+          <hr className={styles.divider} />
+
+          {/* Reseñas */}
+          <div className={styles.seccion}>
+            <Resenas propiedadId={id} />
+          </div>
+
         </div>
 
         {/* Columna derecha fija */}
@@ -646,6 +769,12 @@ export default function PropiedadDetalle() {
               <span className={styles.reservaPrecioValor}>${precio}</span>
               <span className={styles.reservaPrecioLabel}> USD / noche</span>
             </div>
+
+            {propiedad.precioAlta && (
+              <p style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', marginBottom: '0.5rem' }}>
+                Desde ${propiedad.precioBaja || precio} · Hasta ${propiedad.precioAlta} según temporada
+              </p>
+            )}
 
             <div className={styles.reservaCapacidad}>
               <span>👥 {propiedad.huespedes} huéspedes</span>
@@ -663,7 +792,7 @@ export default function PropiedadDetalle() {
 
             <CalendarioReserva
               fechasOcupadas={fechasOcupadas}
-              precioPorNoche={precio}
+              propiedad={propiedad}
               onRangoChange={(ini, fin) => {
                 setFechaInicio(ini);
                 setFechaFin(fin);
@@ -686,16 +815,10 @@ export default function PropiedadDetalle() {
                   target="_blank"
                   rel="noopener noreferrer"
                   style={{
-                    display: 'block',
-                    background: 'white',
-                    color: '#25D366',
-                    border: '2px solid #25D366',
-                    textAlign: 'center',
-                    padding: '0.75rem',
-                    borderRadius: '8px',
-                    fontWeight: 700,
-                    fontSize: '0.9rem',
-                    textDecoration: 'none',
+                    display: 'block', background: 'white', color: '#25D366',
+                    border: '2px solid #25D366', textAlign: 'center',
+                    padding: '0.75rem', borderRadius: '8px', fontWeight: 700,
+                    fontSize: '0.9rem', textDecoration: 'none',
                   }}
                 >
                   💬 Consultar por WhatsApp
