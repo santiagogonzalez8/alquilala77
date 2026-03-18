@@ -1,22 +1,25 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { auth, firestoreGetAll } from '@/lib/firebase';
-import { useRouter } from 'next/navigation';
 import { isAdmin } from '@/lib/adminConfig';
+import { useRouter } from 'next/navigation';
 import AdminDashboard from '@/components/admin/AdminDashboard';
 import AdminPropiedades from '@/components/admin/AdminPropiedades';
 import AdminCalendario from '@/components/admin/AdminCalendario';
+import AdminPrecios from '@/components/admin/AdminPrecios';
+import AdminResenas from '@/components/admin/AdminResenas';
 import AdminTareas from '@/components/admin/AdminTareas';
 import AdminTickets from '@/components/admin/AdminTickets';
 import AdminUsuarios from '@/components/admin/AdminUsuarios';
-import AdminResenas from '@/components/admin/AdminResenas';
-import AdminPrecios from '@/components/admin/AdminPrecios';
 import styles from './admin.module.css';
 
 export default function AdminPanel() {
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [dataLoading, setDataLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [errorMsg, setErrorMsg] = useState(null);
   const [seccion, setSeccion] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -26,10 +29,31 @@ export default function AdminPanel() {
   const [tareas, setTareas] = useState([]);
   const [usuarios, setUsuarios] = useState([]);
 
+  const isFetchingRef = useRef(false);
   const router = useRouter();
 
-  const cargarTodo = useCallback(async () => {
-    setLoading(true);
+  // Scroll lock en mobile cuando sidebar está abierto
+  useEffect(() => {
+    if (sidebarOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [sidebarOpen]);
+
+  // Carga de datos con protección contra fetches simultáneos
+  const cargarTodo = useCallback(async (isManual = false) => {
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
+
+    if (isManual) {
+      setIsRefreshing(true);
+    } else {
+      setDataLoading(true);
+    }
+    setErrorMsg(null);
+
     try {
       const [props, revs, ticks, tars, usrs] = await Promise.all([
         firestoreGetAll('propiedades'),
@@ -45,20 +69,64 @@ export default function AdminPanel() {
       setUsuarios(usrs);
     } catch (error) {
       console.error('Error cargando datos admin:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
 
+      // Detectar sesión expirada
+      if (error.message?.includes('401') || error.message?.includes('403')) {
+        setErrorMsg('Tu sesión expiró. Redirigiendo al login...');
+        setTimeout(() => router.push('/login'), 2500);
+      } else {
+        setErrorMsg('No se pudieron cargar los datos. Verificá tu conexión e intentá de nuevo.');
+        setTimeout(() => setErrorMsg(null), 5000);
+      }
+    } finally {
+      setDataLoading(false);
+      setIsRefreshing(false);
+      isFetchingRef.current = false;
+    }
+  }, [router]);
+
+  // Auth guard con manejo de sesión expirada
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((currentUser) => {
-      if (!currentUser) { router.push('/login'); return; }
-      if (!isAdmin(currentUser.email)) { alert('Sin permisos'); router.push('/'); return; }
+    const unsubscribe = auth.onAuthStateChanged(async (currentUser) => {
+      if (!currentUser) {
+        router.push('/login');
+        return;
+      }
+      if (!isAdmin(currentUser.email)) {
+        alert('Sin permisos de administrador.');
+        router.push('/');
+        return;
+      }
+
+      // Verificar que el token no esté expirado
+      try {
+        await currentUser.getIdToken(true); // force refresh
+      } catch {
+        router.push('/login');
+        return;
+      }
+
       setUser(currentUser);
-      cargarTodo();
+      setAuthLoading(false);
+      cargarTodo(false);
     });
     return () => unsubscribe();
   }, [router, cargarTodo]);
+
+  // Renovar token automáticamente cada 50 minutos
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      try {
+        const currentUser = auth.currentUser;
+        if (currentUser) {
+          await currentUser.getIdToken(true);
+        }
+      } catch {
+        router.push('/login');
+      }
+    }, 50 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [router]);
 
   const menuItems = [
     { key: 'dashboard',   icon: '📊', label: 'Dashboard' },
@@ -66,8 +134,8 @@ export default function AdminPanel() {
     { key: 'calendario',  icon: '📅', label: 'Calendario' },
     { key: 'precios',     icon: '💰', label: 'Precios' },
     { key: 'resenas',     icon: '⭐', label: 'Reseñas' },
-    { key: 'tareas',      icon: '🧹', label: 'Tareas', count: tareas.filter(t => t.estado !== 'completada').length },
-    { key: 'tickets',     icon: '💬', label: 'Soporte', count: tickets.filter(t => t.estado === 'pendiente').length },
+    { key: 'tareas',      icon: '🧹', label: 'Tareas',   count: tareas.filter(t => t.estado !== 'completada').length },
+    { key: 'tickets',     icon: '💬', label: 'Soporte',  count: tickets.filter(t => t.estado === 'pendiente').length },
     { key: 'usuarios',    icon: '👥', label: 'Usuarios', count: usuarios.length },
   ];
 
@@ -76,21 +144,41 @@ export default function AdminPanel() {
     setSidebarOpen(false);
   };
 
-  if (loading) {
+  const handleRefresh = () => {
+    if (!isRefreshing) cargarTodo(true);
+  };
+
+  const seccionActual = menuItems.find(m => m.key === seccion);
+
+  if (authLoading) {
     return (
       <div className={styles.adminLoading}>
         <div className="loading-spinner"></div>
-        Cargando panel de admin...
+        Verificando acceso...
       </div>
     );
   }
 
   return (
     <div className={styles.adminLayout}>
-      {sidebarOpen && (
-        <div className={styles.sidebarOverlay} onClick={() => setSidebarOpen(false)} />
+
+      {/* Toast de error */}
+      {errorMsg && (
+        <div className={styles.toastError}>
+          <span>⚠️ {errorMsg}</span>
+          <button onClick={() => setErrorMsg(null)} className={styles.toastClose}>✕</button>
+        </div>
       )}
 
+      {/* Overlay mobile */}
+      {sidebarOpen && (
+        <div
+          className={styles.sidebarOverlay}
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
       <aside className={`${styles.sidebar} ${sidebarOpen ? styles.sidebarOpen : ''}`}>
         <div className={styles.sidebarHeader}>
           <button onClick={() => router.push('/')} className={styles.sidebarLogo}>
@@ -129,7 +217,7 @@ export default function AdminPanel() {
                 {user?.displayName?.charAt(0) || 'A'}
               </div>
             )}
-            <div>
+            <div className={styles.sidebarUserInfo}>
               <p className={styles.sidebarUserName}>{user?.displayName || 'Admin'}</p>
               <p className={styles.sidebarUserEmail}>{user?.email}</p>
             </div>
@@ -137,7 +225,10 @@ export default function AdminPanel() {
         </div>
       </aside>
 
+      {/* Main */}
       <main className={styles.mainContent}>
+
+        {/* Top bar */}
         <div className={styles.topBar}>
           <button
             onClick={() => setSidebarOpen(true)}
@@ -146,46 +237,86 @@ export default function AdminPanel() {
           >
             <span></span><span></span><span></span>
           </button>
+
           <h1 className={styles.topBarTitle}>
-            {menuItems.find(m => m.key === seccion)?.icon}{' '}
-            {menuItems.find(m => m.key === seccion)?.label}
+            <span className={styles.topBarTitleText}>
+              {seccionActual?.icon} {seccionActual?.label}
+            </span>
           </h1>
-          <button onClick={cargarTodo} className={styles.refreshBtn} aria-label="Actualizar">
+
+          <button
+            onClick={handleRefresh}
+            className={`${styles.refreshBtn} ${isRefreshing ? styles.refreshBtnSpinning : ''}`}
+            aria-label="Actualizar datos"
+            disabled={isRefreshing}
+            title={isRefreshing ? 'Actualizando...' : 'Actualizar datos'}
+          >
             🔄
           </button>
         </div>
 
+        {/* Contenido */}
         <div className={styles.contentArea}>
-          {seccion === 'dashboard' && (
-            <AdminDashboard
-              propiedades={propiedades}
-              reservas={reservas}
-              tickets={tickets}
-              tareas={tareas}
-              usuarios={usuarios}
-              onNavigate={setSeccion}
-            />
-          )}
-          {seccion === 'propiedades' && (
-            <AdminPropiedades propiedades={propiedades} onRefresh={cargarTodo} />
-          )}
-          {seccion === 'calendario' && (
-            <AdminCalendario propiedades={propiedades} reservas={reservas} onRefresh={cargarTodo} />
-          )}
-          {seccion === 'precios' && (
-            <AdminPrecios propiedades={propiedades} onRefresh={cargarTodo} />
-          )}
-          {seccion === 'resenas' && (
-            <AdminResenas propiedades={propiedades} />
-          )}
-          {seccion === 'tareas' && (
-            <AdminTareas tareas={tareas} propiedades={propiedades} onRefresh={cargarTodo} />
-          )}
-          {seccion === 'tickets' && (
-            <AdminTickets tickets={tickets} onRefresh={cargarTodo} />
-          )}
-          {seccion === 'usuarios' && (
-            <AdminUsuarios usuarios={usuarios} propiedades={propiedades} />
+          {dataLoading ? (
+            <div className={styles.skeletonWrapper}>
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className={styles.skeletonCard} />
+              ))}
+            </div>
+          ) : (
+            <>
+              {seccion === 'dashboard' && (
+                <AdminDashboard
+                  propiedades={propiedades}
+                  reservas={reservas}
+                  tickets={tickets}
+                  tareas={tareas}
+                  usuarios={usuarios}
+                  onNavigate={setSeccion}
+                />
+              )}
+              {seccion === 'propiedades' && (
+                <AdminPropiedades
+                  propiedades={propiedades}
+                  onRefresh={() => cargarTodo(true)}
+                />
+              )}
+              {seccion === 'calendario' && (
+                <AdminCalendario
+                  propiedades={propiedades}
+                  reservas={reservas}
+                  onRefresh={() => cargarTodo(true)}
+                />
+              )}
+              {seccion === 'precios' && (
+                <AdminPrecios
+                  propiedades={propiedades}
+                  onRefresh={() => cargarTodo(true)}
+                />
+              )}
+              {seccion === 'resenas' && (
+                <AdminResenas propiedades={propiedades} />
+              )}
+              {seccion === 'tareas' && (
+                <AdminTareas
+                  tareas={tareas}
+                  propiedades={propiedades}
+                  onRefresh={() => cargarTodo(true)}
+                />
+              )}
+              {seccion === 'tickets' && (
+                <AdminTickets
+                  tickets={tickets}
+                  onRefresh={() => cargarTodo(true)}
+                />
+              )}
+              {seccion === 'usuarios' && (
+                <AdminUsuarios
+                  usuarios={usuarios}
+                  propiedades={propiedades}
+                />
+              )}
+            </>
           )}
         </div>
       </main>
