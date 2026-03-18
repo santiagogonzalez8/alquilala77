@@ -8,7 +8,6 @@ import SearchBar from '@/components/SearchBar'
 import dynamic from 'next/dynamic'
 import styles from './buscar.module.css'
 
-// Importar mapa dinámicamente
 const MapaPropiedades = dynamic(
   () => import('@/components/MapaPropiedades'),
   {
@@ -34,6 +33,13 @@ function calcularNoches(desde, hasta) {
   return diff > 0 ? diff : 0
 }
 
+const AMENITIES_FILTRO = [
+  'Piscina', 'WiFi', 'Aire acondicionado', 'Parrillero',
+  'Apto mascotas', 'Estacionamiento', 'Vista al mar', 'Jacuzzi',
+]
+
+const TIPOS_PROPIEDAD = ['Casa', 'Apartamento', 'Cabaña', 'Chalet', 'Estudio', 'Villa']
+
 function BuscarContenido() {
   const searchParams = useSearchParams()
   const donde = searchParams.get('donde') || ''
@@ -44,6 +50,14 @@ function BuscarContenido() {
   const [resultados, setResultados] = useState([])
   const [loading, setLoading] = useState(true)
   const [vistaMap, setVistaMap] = useState(false)
+  const [mostrarFiltros, setMostrarFiltros] = useState(false)
+
+  // Filtros locales
+  const [precioMin, setPrecioMin] = useState('')
+  const [precioMax, setPrecioMax] = useState('')
+  const [tipoSeleccionado, setTipoSeleccionado] = useState('')
+  const [amenitiesSeleccionadas, setAmenitiesSeleccionadas] = useState([])
+  const [ordenar, setOrdenar] = useState('relevancia')
 
   useEffect(() => {
     const buscar = async () => {
@@ -94,9 +108,47 @@ function BuscarContenido() {
         setLoading(false)
       }
     }
-
     buscar()
   }, [donde, entrada, salida, huespedes])
+
+  // Filtros locales aplicados sobre resultados
+  const resultadosFiltrados = resultados
+    .filter(p => {
+      const precio = Number(p.precioPorNoche || 0)
+      if (precioMin && precio < Number(precioMin)) return false
+      if (precioMax && precio > Number(precioMax)) return false
+      return true
+    })
+    .filter(p => {
+      if (!tipoSeleccionado) return true
+      return p.tipoPropiedad === tipoSeleccionado
+    })
+    .filter(p => {
+      if (!amenitiesSeleccionadas.length) return true
+      return amenitiesSeleccionadas.every(a => p.amenities?.includes(a))
+    })
+    .sort((a, b) => {
+      if (ordenar === 'precio_asc') return Number(a.precioPorNoche) - Number(b.precioPorNoche)
+      if (ordenar === 'precio_desc') return Number(b.precioPorNoche) - Number(a.precioPorNoche)
+      if (ordenar === 'huespedes') return Number(b.huespedes) - Number(a.huespedes)
+      return 0
+    })
+
+  const toggleAmenity = (a) => {
+    setAmenitiesSeleccionadas(prev =>
+      prev.includes(a) ? prev.filter(x => x !== a) : [...prev, a]
+    )
+  }
+
+  const limpiarFiltros = () => {
+    setPrecioMin('')
+    setPrecioMax('')
+    setTipoSeleccionado('')
+    setAmenitiesSeleccionadas([])
+    setOrdenar('relevancia')
+  }
+
+  const hayFiltrosActivos = precioMin || precioMax || tipoSeleccionado || amenitiesSeleccionadas.length > 0
 
   const noches = calcularNoches(entrada, salida)
 
@@ -112,12 +164,12 @@ function BuscarContenido() {
 
         {/* Header resultados */}
         <div className={styles.resultadosHeader}>
-          <div>
+          <div style={{ flex: 1 }}>
             <h1 className={styles.titulo}>
               {loading ? 'Buscando...' : (
                 donde
-                  ? `${resultados.length} ${resultados.length === 1 ? 'propiedad' : 'propiedades'} en "${donde}"`
-                  : `${resultados.length} ${resultados.length === 1 ? 'propiedad disponible' : 'propiedades disponibles'}`
+                  ? `${resultadosFiltrados.length} ${resultadosFiltrados.length === 1 ? 'propiedad' : 'propiedades'} en "${donde}"`
+                  : `${resultadosFiltrados.length} ${resultadosFiltrados.length === 1 ? 'propiedad disponible' : 'propiedades disponibles'}`
               )}
             </h1>
 
@@ -133,60 +185,274 @@ function BuscarContenido() {
                 {huespedes > 1 && (
                   <span className={styles.filtroTag}>👥 {huespedes} huéspedes</span>
                 )}
+                {tipoSeleccionado && (
+                  <span className={styles.filtroTag}>🏠 {tipoSeleccionado}</span>
+                )}
+                {(precioMin || precioMax) && (
+                  <span className={styles.filtroTag}>
+                    💰 {precioMin || '0'} — {precioMax || '∞'} USD
+                  </span>
+                )}
+                {amenitiesSeleccionadas.map(a => (
+                  <span key={a} className={styles.filtroTag}>✓ {a}</span>
+                ))}
               </div>
             )}
           </div>
 
-          {/* Toggle vista */}
-          {!loading && resultados.length > 0 && (
-            <div style={{
-              display: 'flex',
-              background: 'var(--color-bg-warm)',
-              border: '1px solid var(--color-border-light)',
-              borderRadius: '8px',
-              padding: '0.25rem',
-              gap: '0.25rem',
-              flexShrink: 0,
-            }}>
-              <button
-                onClick={() => setVistaMap(false)}
-                style={{
-                  padding: '0.5rem 1rem',
-                  borderRadius: '6px',
-                  border: 'none',
-                  background: !vistaMap ? 'white' : 'transparent',
-                  color: !vistaMap ? 'var(--color-primary)' : 'var(--color-text-muted)',
-                  fontWeight: !vistaMap ? 700 : 500,
-                  cursor: 'pointer',
-                  fontSize: '0.85rem',
-                  boxShadow: !vistaMap ? 'var(--shadow-sm)' : 'none',
-                  transition: 'all 0.15s',
-                  fontFamily: 'inherit',
-                }}
-              >
-                ⊞ Lista
-              </button>
-              <button
-                onClick={() => setVistaMap(true)}
-                style={{
-                  padding: '0.5rem 1rem',
-                  borderRadius: '6px',
-                  border: 'none',
-                  background: vistaMap ? 'white' : 'transparent',
-                  color: vistaMap ? 'var(--color-primary)' : 'var(--color-text-muted)',
-                  fontWeight: vistaMap ? 700 : 500,
-                  cursor: 'pointer',
-                  fontSize: '0.85rem',
-                  boxShadow: vistaMap ? 'var(--shadow-sm)' : 'none',
-                  transition: 'all 0.15s',
-                  fontFamily: 'inherit',
-                }}
-              >
-                🗺️ Mapa
-              </button>
-            </div>
-          )}
+          {/* Controles derecha */}
+          <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexShrink: 0, flexWrap: 'wrap' }}>
+
+            {/* Ordenar */}
+            <select
+              value={ordenar}
+              onChange={e => setOrdenar(e.target.value)}
+              style={{
+                border: '1px solid var(--color-border)',
+                borderRadius: '8px',
+                padding: '0.5rem 0.75rem',
+                fontSize: '0.85rem',
+                fontFamily: 'inherit',
+                background: 'white',
+                cursor: 'pointer',
+                color: 'var(--color-text)',
+              }}
+            >
+              <option value="relevancia">Relevancia</option>
+              <option value="precio_asc">Precio: menor a mayor</option>
+              <option value="precio_desc">Precio: mayor a menor</option>
+              <option value="huespedes">Mayor capacidad</option>
+            </select>
+
+            {/* Botón filtros */}
+            <button
+              onClick={() => setMostrarFiltros(!mostrarFiltros)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '0.5rem',
+                padding: '0.5rem 1rem',
+                border: hayFiltrosActivos
+                  ? '2px solid var(--color-primary)'
+                  : '1px solid var(--color-border)',
+                borderRadius: '8px',
+                background: hayFiltrosActivos ? 'rgba(30,58,95,0.06)' : 'white',
+                color: 'var(--color-primary)',
+                fontWeight: hayFiltrosActivos ? 700 : 500,
+                cursor: 'pointer',
+                fontSize: '0.85rem',
+                fontFamily: 'inherit',
+              }}
+            >
+              ⚙️ Filtros
+              {hayFiltrosActivos && (
+                <span style={{
+                  background: 'var(--color-primary)', color: 'white',
+                  borderRadius: '50%', width: '18px', height: '18px',
+                  fontSize: '0.7rem', display: 'flex',
+                  alignItems: 'center', justifyContent: 'center', fontWeight: 700,
+                }}>
+                  {[precioMin, precioMax, tipoSeleccionado].filter(Boolean).length + amenitiesSeleccionadas.length}
+                </span>
+              )}
+            </button>
+
+            {/* Toggle vista */}
+            {!loading && resultados.length > 0 && (
+              <div style={{
+                display: 'flex',
+                background: 'var(--color-bg-warm)',
+                border: '1px solid var(--color-border-light)',
+                borderRadius: '8px',
+                padding: '0.25rem',
+                gap: '0.25rem',
+              }}>
+                <button
+                  onClick={() => setVistaMap(false)}
+                  style={{
+                    padding: '0.4rem 0.75rem', borderRadius: '6px', border: 'none',
+                    background: !vistaMap ? 'white' : 'transparent',
+                    color: !vistaMap ? 'var(--color-primary)' : 'var(--color-text-muted)',
+                    fontWeight: !vistaMap ? 700 : 500, cursor: 'pointer',
+                    fontSize: '0.82rem',
+                    boxShadow: !vistaMap ? 'var(--shadow-sm)' : 'none',
+                    transition: 'all 0.15s', fontFamily: 'inherit',
+                  }}
+                >⊞ Lista</button>
+                <button
+                  onClick={() => setVistaMap(true)}
+                  style={{
+                    padding: '0.4rem 0.75rem', borderRadius: '6px', border: 'none',
+                    background: vistaMap ? 'white' : 'transparent',
+                    color: vistaMap ? 'var(--color-primary)' : 'var(--color-text-muted)',
+                    fontWeight: vistaMap ? 700 : 500, cursor: 'pointer',
+                    fontSize: '0.82rem',
+                    boxShadow: vistaMap ? 'var(--shadow-sm)' : 'none',
+                    transition: 'all 0.15s', fontFamily: 'inherit',
+                  }}
+                >🗺️ Mapa</button>
+              </div>
+            )}
+          </div>
         </div>
+
+        {/* Panel de filtros desplegable */}
+        {mostrarFiltros && (
+          <div style={{
+            background: 'white',
+            border: '1px solid var(--color-border-light)',
+            borderRadius: '12px',
+            padding: '1.5rem',
+            marginBottom: '1.5rem',
+            boxShadow: 'var(--shadow-sm)',
+          }}>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+              gap: '1.5rem',
+            }}>
+
+              {/* Rango de precio */}
+              <div>
+                <p style={{
+                  fontSize: '0.82rem', fontWeight: 700,
+                  color: 'var(--color-text-muted)',
+                  textTransform: 'uppercase', letterSpacing: '0.4px',
+                  marginBottom: '0.75rem',
+                }}>
+                  💰 Precio por noche (USD)
+                </p>
+                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                  <input
+                    type="number"
+                    placeholder="Mín"
+                    value={precioMin}
+                    onChange={e => setPrecioMin(e.target.value)}
+                    min="0"
+                    style={{
+                      flex: 1, border: '2px solid var(--color-border)',
+                      borderRadius: '8px', padding: '0.55rem 0.75rem',
+                      fontSize: '0.9rem', fontFamily: 'inherit', outline: 'none',
+                    }}
+                  />
+                  <span style={{ color: 'var(--color-text-muted)' }}>—</span>
+                  <input
+                    type="number"
+                    placeholder="Máx"
+                    value={precioMax}
+                    onChange={e => setPrecioMax(e.target.value)}
+                    min="0"
+                    style={{
+                      flex: 1, border: '2px solid var(--color-border)',
+                      borderRadius: '8px', padding: '0.55rem 0.75rem',
+                      fontSize: '0.9rem', fontFamily: 'inherit', outline: 'none',
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Tipo de propiedad */}
+              <div>
+                <p style={{
+                  fontSize: '0.82rem', fontWeight: 700,
+                  color: 'var(--color-text-muted)',
+                  textTransform: 'uppercase', letterSpacing: '0.4px',
+                  marginBottom: '0.75rem',
+                }}>
+                  🏠 Tipo de propiedad
+                </p>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                  {TIPOS_PROPIEDAD.map(tipo => (
+                    <button
+                      key={tipo}
+                      onClick={() => setTipoSeleccionado(tipoSeleccionado === tipo ? '' : tipo)}
+                      style={{
+                        padding: '0.35rem 0.85rem',
+                        borderRadius: '999px',
+                        border: tipoSeleccionado === tipo
+                          ? '2px solid var(--color-primary)'
+                          : '1px solid var(--color-border)',
+                        background: tipoSeleccionado === tipo
+                          ? 'var(--color-primary)' : 'white',
+                        color: tipoSeleccionado === tipo ? 'white' : 'var(--color-text)',
+                        fontSize: '0.82rem',
+                        fontWeight: tipoSeleccionado === tipo ? 700 : 400,
+                        cursor: 'pointer',
+                        fontFamily: 'inherit',
+                        transition: 'all 0.15s',
+                      }}
+                    >
+                      {tipo}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Amenities */}
+              <div>
+                <p style={{
+                  fontSize: '0.82rem', fontWeight: 700,
+                  color: 'var(--color-text-muted)',
+                  textTransform: 'uppercase', letterSpacing: '0.4px',
+                  marginBottom: '0.75rem',
+                }}>
+                  ✨ Amenidades
+                </p>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                  {AMENITIES_FILTRO.map(a => (
+                    <button
+                      key={a}
+                      onClick={() => toggleAmenity(a)}
+                      style={{
+                        padding: '0.35rem 0.85rem',
+                        borderRadius: '999px',
+                        border: amenitiesSeleccionadas.includes(a)
+                          ? '2px solid var(--color-accent)'
+                          : '1px solid var(--color-border)',
+                        background: amenitiesSeleccionadas.includes(a)
+                          ? 'var(--color-accent)' : 'white',
+                        color: amenitiesSeleccionadas.includes(a) ? 'white' : 'var(--color-text)',
+                        fontSize: '0.82rem',
+                        fontWeight: amenitiesSeleccionadas.includes(a) ? 700 : 400,
+                        cursor: 'pointer',
+                        fontFamily: 'inherit',
+                        transition: 'all 0.15s',
+                      }}
+                    >
+                      {a}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+            </div>
+
+            {/* Footer filtros */}
+            {hayFiltrosActivos && (
+              <div style={{
+                marginTop: '1.25rem',
+                paddingTop: '1rem',
+                borderTop: '1px solid var(--color-border-light)',
+                display: 'flex',
+                justifyContent: 'flex-end',
+              }}>
+                <button
+                  onClick={limpiarFiltros}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--color-primary)',
+                    fontWeight: 600,
+                    fontSize: '0.875rem',
+                    cursor: 'pointer',
+                    textDecoration: 'underline',
+                    fontFamily: 'inherit',
+                  }}
+                >
+                  Limpiar todos los filtros
+                </button>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Contenido */}
         {loading ? (
@@ -194,20 +460,31 @@ function BuscarContenido() {
             <div className="loading-spinner" />
             <p>Buscando propiedades...</p>
           </div>
-        ) : resultados.length === 0 ? (
+        ) : resultadosFiltrados.length === 0 ? (
           <div className={styles.empty}>
             <div className={styles.emptyIcon}>🏖️</div>
             <h2>No encontramos propiedades</h2>
             <p>
-              {donde
+              {hayFiltrosActivos
+                ? 'Probá ajustando o limpiando los filtros.'
+                : donde
                 ? `No hay propiedades disponibles en "${donde}" con esos criterios.`
                 : 'No hay propiedades disponibles con esos criterios.'
               }
             </p>
             <div className={styles.emptyAcciones}>
-              <Link href="/buscar" className={styles.btnLimpiar}>
-                Ver todas las propiedades
-              </Link>
+              {hayFiltrosActivos ? (
+                <button
+                  onClick={limpiarFiltros}
+                  className={styles.btnLimpiar}
+                >
+                  Limpiar filtros
+                </button>
+              ) : (
+                <Link href="/buscar" className={styles.btnLimpiar}>
+                  Ver todas las propiedades
+                </Link>
+              )}
               <a
                 href="https://wa.me/59895532294?text=Hola!%20Estoy%20buscando%20una%20propiedad%20y%20no%20encuentro%20lo%20que%20necesito"
                 target="_blank"
@@ -220,18 +497,13 @@ function BuscarContenido() {
           </div>
         ) : (
           <>
-            {/* Vista mapa */}
             {vistaMap && (
-              <MapaPropiedades
-                propiedades={resultados}
-                altura="560px"
-              />
+              <MapaPropiedades propiedades={resultadosFiltrados} altura="560px" />
             )}
 
-            {/* Vista lista */}
             {!vistaMap && (
               <div className={styles.grid}>
-                {resultados.map(prop => (
+                {resultadosFiltrados.map(prop => (
                   <Link
                     key={prop.id}
                     href={`/propiedades/${prop.id}`}
@@ -258,6 +530,16 @@ function BuscarContenido() {
                       }}
                     >
                       <span className={styles.badge}>Disponible</span>
+                      {prop.tipoPropiedad && (
+                        <span style={{
+                          position: 'absolute', bottom: '0.75rem', left: '0.75rem',
+                          background: 'rgba(30,58,95,0.85)', color: 'white',
+                          fontSize: '0.72rem', fontWeight: 600,
+                          padding: '0.2rem 0.6rem', borderRadius: '4px',
+                        }}>
+                          {prop.tipoPropiedad}
+                        </span>
+                      )}
                       {noches > 0 && (
                         <span className={styles.totalBadge}>
                           ${Number(prop.precioPorNoche) * noches} USD total
@@ -272,6 +554,32 @@ function BuscarContenido() {
                         <span>🛏️ {prop.dormitorios} dorm.</span>
                         <span>🚿 {prop.banos} baños</span>
                       </div>
+                      {prop.amenities?.length > 0 && (
+                        <div style={{
+                          display: 'flex', gap: '0.3rem',
+                          flexWrap: 'wrap', marginBottom: '0.5rem',
+                        }}>
+                          {prop.amenities.slice(0, 3).map((a, i) => (
+                            <span key={i} style={{
+                              fontSize: '0.72rem',
+                              background: 'var(--color-bg-warm)',
+                              color: 'var(--color-text-muted)',
+                              padding: '0.15rem 0.5rem',
+                              borderRadius: '4px',
+                            }}>
+                              {a}
+                            </span>
+                          ))}
+                          {prop.amenities.length > 3 && (
+                            <span style={{
+                              fontSize: '0.72rem',
+                              color: 'var(--color-text-muted)',
+                            }}>
+                              +{prop.amenities.length - 3}
+                            </span>
+                          )}
+                        </div>
+                      )}
                       <div className={styles.cardPrecio}>
                         <span className={styles.precioValor}>${prop.precioPorNoche}</span>
                         <span className={styles.precioLabel}> USD / noche</span>
