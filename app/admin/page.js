@@ -1,8 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { auth, firestoreGetAll } from '@/lib/firebase';
-import { isAdmin } from '@/lib/adminConfig';
+import { auth, firestoreGetAll, isAdmin } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
 import AdminDashboard from '@/components/admin/AdminDashboard';
 import AdminPropiedades from '@/components/admin/AdminPropiedades';

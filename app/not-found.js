@@ -9,6 +9,7 @@ export default function NotFound() {
       alignItems: 'center',
       justifyContent: 'center',
       padding: '2rem',
+      paddingTop: 'calc(var(--navbar-height) + 2rem)',
       textAlign: 'center',
       background: '#faf6f1'
     }}>
@@ -39,21 +40,37 @@ export default function NotFound() {
       }}>
         Parece que esta página se fue de vacaciones. Volvé al inicio para seguir explorando.
       </p>
-      <Link
-        href="/"
-        style={{
-          background: '#1e3a5f',
-          color: 'white',
-          padding: '0.85rem 2rem',
-          borderRadius: '8px',
-          fontWeight: 700,
-          fontSize: '1rem',
-          textDecoration: 'none',
-          transition: 'all 0.2s'
-        }}
-      >
-        ← Volver al inicio
-      </Link>
+      <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', justifyContent: 'center' }}>
+        <Link
+          href="/"
+          style={{
+            background: '#1e3a5f',
+            color: 'white',
+            padding: '0.85rem 2rem',
+            borderRadius: '8px',
+            fontWeight: 700,
+            fontSize: '1rem',
+            textDecoration: 'none',
+          }}
+        >
+          ← Volver al inicio
+        </Link>
+        <Link
+          href="/buscar"
+          style={{
+            background: 'white',
+            color: '#1e3a5f',
+            border: '2px solid #1e3a5f',
+            padding: '0.85rem 2rem',
+            borderRadius: '8px',
+            fontWeight: 700,
+            fontSize: '1rem',
+            textDecoration: 'none',
+          }}
+        >
+          🔍 Ver propiedades
+        </Link>
+      </div>
     </div>
   )
 }

@@ -15,14 +15,36 @@ export default function Soporte() {
   const [enviado, setEnviado] = useState(false);
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
+  e.preventDefault();
+  setLoading(true);
 
-    try {
-      const PROJECT_ID = 'alquilala-77';
-      const DATABASE = 'alquilala';
-      const API_KEY = 'AIzaSyCfQxGT9EhJpv4vXZoMTHyy6Gl7Vih-f6w';
-      const url = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/${DATABASE}/documents/tickets-soporte?key=${API_KEY}`;
+  try {
+    const res = await fetch('/api/tickets', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        nombre: formData.nombre,
+        email: formData.email,
+        telefono: formData.telefono || '',
+        asunto: formData.asunto,
+        mensaje: formData.mensaje,
+      }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Error al enviar ticket');
+    }
+
+    setEnviado(true);
+    setFormData({ nombre: '', email: '', telefono: '', asunto: 'Consulta general', mensaje: '' });
+  } catch (error) {
+    console.error('Error al enviar:', error);
+    alert('Error al enviar el mensaje. Intentá de nuevo.');
+  } finally {
+    setLoading(false);
+  }
+};
 
       const fields = {
         nombre:   { stringValue: formData.nombre },
