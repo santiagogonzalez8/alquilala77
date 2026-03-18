@@ -559,3 +559,20 @@
     text-align: center;
   }
 }
+/* ── SearchBar dentro del hero ── */
+.heroSearch {
+  position: absolute;
+  bottom: 3.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90%;
+  max-width: 860px;
+  z-index: 10;
+}
+
+@media (max-width: 768px) {
+  .heroSearch {
+    bottom: 2rem;
+    width: 95%;
+  }
+}

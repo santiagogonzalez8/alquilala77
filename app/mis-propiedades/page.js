@@ -65,10 +65,10 @@ function MisPropiedadesContenido() {
   const getEstadoInfo = (estado) => {
     switch (estado) {
       case 'disponible': return { label: '✅ Activa', class: styles.badgeGreen, desc: 'Tu propiedad está publicada y visible' };
-      case 'pendiente': return { label: '⏳ En revisión', class: styles.badgeYellow, desc: 'Nuestro equipo está revisando tu publicación' };
-      case 'pausada': return { label: '⏸️ Pausada', class: styles.badgeBlue, desc: 'Tu propiedad está temporalmente fuera de línea' };
-      case 'rechazada': return { label: '❌ Rechazada', class: styles.badgeRed, desc: 'Revisá los datos y volvé a publicar' };
-      default: return { label: estado || 'Sin estado', class: styles.badgeGray, desc: '' };
+      case 'pendiente':  return { label: '⏳ En revisión', class: styles.badgeYellow, desc: 'Nuestro equipo está revisando tu publicación' };
+      case 'pausada':    return { label: '⏸️ Pausada', class: styles.badgeBlue, desc: 'Tu propiedad está temporalmente fuera de línea' };
+      case 'rechazada':  return { label: '❌ Rechazada', class: styles.badgeRed, desc: 'Revisá los datos y volvé a publicar' };
+      default:           return { label: estado || 'Sin estado', class: styles.badgeGray, desc: '' };
     }
   };
 
@@ -215,7 +215,12 @@ function MisPropiedadesContenido() {
                           <div className={styles.expandedPhotos}>
                             {prop.imagenes.map((url, i) => (
                               <a key={i} href={url} target="_blank" rel="noopener noreferrer">
-                                <img src={url} alt={`Foto ${i + 1}`} className={styles.expandedPhoto} />
+                                <img
+                                  src={url}
+                                  alt={`Foto ${i + 1}`}
+                                  className={styles.expandedPhoto}
+                                  loading="lazy"
+                                />
                               </a>
                             ))}
                           </div>

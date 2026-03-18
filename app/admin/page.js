@@ -31,7 +31,6 @@ export default function AdminPanel() {
   const isFetchingRef = useRef(false);
   const router = useRouter();
 
-  // Scroll lock en mobile cuando sidebar está abierto
   useEffect(() => {
     if (sidebarOpen) {
       document.body.style.overflow = 'hidden';
@@ -41,7 +40,6 @@ export default function AdminPanel() {
     return () => { document.body.style.overflow = ''; };
   }, [sidebarOpen]);
 
-  // Carga de datos con protección contra fetches simultáneos
   const cargarTodo = useCallback(async (isManual = false) => {
     if (isFetchingRef.current) return;
     isFetchingRef.current = true;
@@ -68,8 +66,6 @@ export default function AdminPanel() {
       setUsuarios(usrs);
     } catch (error) {
       console.error('Error cargando datos admin:', error);
-
-      // Detectar sesión expirada
       if (error.message?.includes('401') || error.message?.includes('403')) {
         setErrorMsg('Tu sesión expiró. Redirigiendo al login...');
         setTimeout(() => router.push('/login'), 2500);
@@ -84,7 +80,6 @@ export default function AdminPanel() {
     }
   }, [router]);
 
-  // Auth guard con manejo de sesión expirada
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (currentUser) => {
       if (!currentUser) {
@@ -96,15 +91,12 @@ export default function AdminPanel() {
         router.push('/');
         return;
       }
-
-      // Verificar que el token no esté expirado
       try {
-        await currentUser.getIdToken(true); // force refresh
+        await currentUser.getIdToken(true);
       } catch {
         router.push('/login');
         return;
       }
-
       setUser(currentUser);
       setAuthLoading(false);
       cargarTodo(false);
@@ -112,14 +104,11 @@ export default function AdminPanel() {
     return () => unsubscribe();
   }, [router, cargarTodo]);
 
-  // Renovar token automáticamente cada 50 minutos
   useEffect(() => {
     const interval = setInterval(async () => {
       try {
         const currentUser = auth.currentUser;
-        if (currentUser) {
-          await currentUser.getIdToken(true);
-        }
+        if (currentUser) await currentUser.getIdToken(true);
       } catch {
         router.push('/login');
       }
@@ -133,8 +122,8 @@ export default function AdminPanel() {
     { key: 'calendario',  icon: '📅', label: 'Calendario' },
     { key: 'precios',     icon: '💰', label: 'Precios' },
     { key: 'resenas',     icon: '⭐', label: 'Reseñas' },
-    { key: 'tareas',      icon: '🧹', label: 'Tareas',   count: tareas.filter(t => t.estado !== 'completada').length },
-    { key: 'tickets',     icon: '💬', label: 'Soporte',  count: tickets.filter(t => t.estado === 'pendiente').length },
+    { key: 'tareas',      icon: '🧹', label: 'Tareas', count: tareas.filter(t => t.estado !== 'completada').length },
+    { key: 'tickets',     icon: '💬', label: 'Soporte', count: tickets.filter(t => t.estado === 'pendiente').length },
     { key: 'usuarios',    icon: '👥', label: 'Usuarios', count: usuarios.length },
   ];
 
@@ -188,7 +177,18 @@ export default function AdminPanel() {
             </svg>
             <span>alquilala</span>
           </button>
-          <span className={styles.sidebarBadge}>Admin</span>
+
+          {/* Badge + botón X agrupados */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <span className={styles.sidebarBadge}>Admin</span>
+            <button
+              onClick={() => setSidebarOpen(false)}
+              className={styles.sidebarCloseBtn}
+              aria-label="Cerrar menú"
+            >
+              ✕
+            </button>
+          </div>
         </div>
 
         <nav className={styles.sidebarNav}>

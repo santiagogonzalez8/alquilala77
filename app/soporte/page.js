@@ -15,56 +15,25 @@ export default function Soporte() {
   const [enviado, setEnviado] = useState(false);
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
-  setLoading(true);
+    e.preventDefault();
+    setLoading(true);
 
-  try {
-    const res = await fetch('/api/tickets', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        nombre: formData.nombre,
-        email: formData.email,
-        telefono: formData.telefono || '',
-        asunto: formData.asunto,
-        mensaje: formData.mensaje,
-      }),
-    });
-
-    if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.error || 'Error al enviar ticket');
-    }
-
-    setEnviado(true);
-    setFormData({ nombre: '', email: '', telefono: '', asunto: 'Consulta general', mensaje: '' });
-  } catch (error) {
-    console.error('Error al enviar:', error);
-    alert('Error al enviar el mensaje. Intentá de nuevo.');
-  } finally {
-    setLoading(false);
-  }
-};
-
-      const fields = {
-        nombre:   { stringValue: formData.nombre },
-        email:    { stringValue: formData.email },
-        telefono: { stringValue: formData.telefono || '' },
-        asunto:   { stringValue: formData.asunto },
-        mensaje:  { stringValue: formData.mensaje },
-        fecha:    { stringValue: new Date().toISOString() },
-        estado:   { stringValue: 'pendiente' },
-      };
-
-      const res = await fetch(url, {
+    try {
+      const res = await fetch('/api/tickets', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fields }),
+        body: JSON.stringify({
+          nombre: formData.nombre,
+          email: formData.email,
+          telefono: formData.telefono || '',
+          asunto: formData.asunto,
+          mensaje: formData.mensaje,
+        }),
       });
 
       if (!res.ok) {
         const err = await res.json();
-        throw new Error(err.error?.message || 'Error al guardar ticket');
+        throw new Error(err.error || 'Error al enviar ticket');
       }
 
       setEnviado(true);
@@ -137,7 +106,12 @@ export default function Soporte() {
                 </div>
 
                 <div className={styles.formGroup}>
-                  <label>Teléfono <span style={{ color: 'var(--color-text-muted)', fontWeight: 400 }}>(opcional — para respuesta por WhatsApp)</span></label>
+                  <label>
+                    Teléfono{' '}
+                    <span style={{ color: 'var(--color-text-muted)', fontWeight: 400 }}>
+                      (opcional — para respuesta por WhatsApp)
+                    </span>
+                  </label>
                   <input
                     type="tel"
                     name="telefono"
@@ -212,7 +186,9 @@ export default function Soporte() {
               <div className={styles.infoIcon}>🕐</div>
               <h3>Horario</h3>
               <p>Lunes a viernes</p>
-              <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginTop: '0.25rem' }}>9:00 — 18:00 (UYT)</p>
+              <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginTop: '0.25rem' }}>
+                9:00 — 18:00 (UYT)
+              </p>
             </div>
           </div>
 

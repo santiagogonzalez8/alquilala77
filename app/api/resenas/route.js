@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 
-const PROJECT_ID = 'alquilala-77';
+const PROJECT_ID = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'alquilala-77';
 const DATABASE = 'alquilala';
-const API_KEY = 'AIzaSyCfQxGT9EhJpv4vXZoMTHyy6Gl7Vih-f6w';
+const API_KEY = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
 
 export async function POST(request) {
   try {
@@ -14,14 +14,14 @@ export async function POST(request) {
 
     const fields = {
       propiedadId: { stringValue: propiedadId },
-      userEmail: { stringValue: userEmail || '' },
-      userName: { stringValue: userName || 'Huésped' },
-      userPhoto: { stringValue: userPhoto || '' },
-      puntuacion: { integerValue: String(Math.min(5, Math.max(1, puntuacion))) },
-      comentario: { stringValue: comentario },
-      fechaEstadia: { stringValue: fechaEstadia || '' },
-      fecha: { stringValue: new Date().toISOString() },
-      aprobada: { booleanValue: false },
+      userEmail:   { stringValue: userEmail || '' },
+      userName:    { stringValue: userName || 'Huésped' },
+      userPhoto:   { stringValue: userPhoto || '' },
+      puntuacion:  { integerValue: String(Math.min(5, Math.max(1, puntuacion))) },
+      comentario:  { stringValue: comentario },
+      fechaEstadia:{ stringValue: fechaEstadia || '' },
+      fecha:       { stringValue: new Date().toISOString() },
+      aprobada:    { booleanValue: false },
     };
 
     const res = await fetch(

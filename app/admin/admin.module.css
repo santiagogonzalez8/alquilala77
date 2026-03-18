@@ -882,3 +882,30 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* ── Botón cerrar sidebar mobile ── */
+.sidebarCloseBtn {
+  display: none;
+  background: rgba(255,255,255,0.15);
+  border: none;
+  color: white;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 0.9rem;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+
+.sidebarCloseBtn:hover {
+  background: rgba(255,255,255,0.3);
+}
+
+@media (max-width: 900px) {
+  .sidebarCloseBtn {
+    display: flex;
+  }
+}

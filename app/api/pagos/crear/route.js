@@ -51,6 +51,7 @@ export async function POST(request) {
         auto_return: 'approved',
         external_reference: JSON.stringify({
           propiedadId,
+          titulo, 
           fechaInicio,
           fechaFin,
           noches,

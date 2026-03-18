@@ -4,9 +4,9 @@ import { useEffect, useState, useRef } from 'react'
 import Link from 'next/link'
 import { auth, firestoreGetPublic } from '@/lib/firebase'
 import dynamic from 'next/dynamic'
+import SearchBar from '@/components/SearchBar'
 import styles from './page.module.css'
 
-// Importar mapa dinámicamente para evitar errores SSR
 const MapaPropiedades = dynamic(
   () => import('@/components/MapaPropiedades'),
   { ssr: false, loading: () => (
@@ -34,21 +34,21 @@ function useOnScreen(ref, threshold = 0.15) {
   return isVisible
 }
 
-function AnimatedSection({ children, className = '' }) {
+function AnimatedSection({ children, className = '', style = {} }) {
   const ref = useRef(null)
   const isVisible = useOnScreen(ref)
   return (
-    <div ref={ref} className={`animate-on-scroll ${isVisible ? 'visible' : ''} ${className}`}>
+    <div ref={ref} className={`animate-on-scroll ${isVisible ? 'visible' : ''} ${className}`} style={style}>
       {children}
     </div>
   )
 }
 
-function StaggerGrid({ children, className = '' }) {
+function StaggerGrid({ children, className = '', style = {} }) {
   const ref = useRef(null)
   const isVisible = useOnScreen(ref)
   return (
-    <div ref={ref} className={`stagger-children ${isVisible ? 'visible' : ''} ${className}`}>
+    <div ref={ref} className={`stagger-children ${isVisible ? 'visible' : ''} ${className}`} style={style}>
       {children}
     </div>
   )
@@ -118,10 +118,34 @@ export default function Home() {
     { icon: '🔑', titulo: 'Gestión de llaves', desc: 'Coordinamos la entrega y devolución de llaves con cada huésped de forma segura.' },
   ]
 
+  const testimonios = [
+    {
+      nombre: 'Marcela R.',
+      ubicacion: 'Punta del Este',
+      propiedad: 'Casa 4 dormitorios',
+      texto: 'Antes pasaba meses con la casa vacía. Desde que confié en Alquilala tengo ocupación casi todo el año y sin hacer nada.',
+      estrellas: 5,
+    },
+    {
+      nombre: 'Diego F.',
+      ubicacion: 'La Paloma',
+      propiedad: 'Cabaña frente al mar',
+      texto: 'El equipo se encarga de todo. Limpieza, llaves, consultas de los huéspedes... yo solo recibo el dinero al final del mes.',
+      estrellas: 5,
+    },
+    {
+      nombre: 'Valeria M.',
+      ubicacion: 'Punta del Diablo',
+      propiedad: 'Apartamento 2 amb.',
+      texto: 'Lo que más valoro es la transparencia. Veo todos los movimientos en tiempo real y confío 100% en el equipo.',
+      estrellas: 5,
+    },
+  ]
+
   return (
     <div className={styles.home}>
 
-      {/* HERO */}
+      {/* ── HERO ── */}
       <section className={styles.hero}>
         {slides.map((slide, index) => (
           <div
@@ -179,9 +203,14 @@ export default function Home() {
             />
           ))}
         </div>
+
+        {/* SearchBar dentro del hero */}
+        <div className={styles.heroSearch}>
+          <SearchBar />
+        </div>
       </section>
 
-      {/* CÓMO FUNCIONA */}
+      {/* ── CÓMO FUNCIONA ── */}
       <section id="como-funciona" className={`section-padding ${styles.comofunciona}`}>
         <div className="container" style={{ textAlign: 'center' }}>
           <AnimatedSection>
@@ -204,7 +233,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* SERVICIOS */}
+      {/* ── SERVICIOS ── */}
       <section id="servicios" className={`section-padding ${styles.serviciosSection}`}>
         <div className="container">
           <AnimatedSection>
@@ -228,7 +257,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* PROPIEDADES */}
+      {/* ── PROPIEDADES ── */}
       <section id="propiedades" className={`section-padding ${styles.propiedadesSection}`}>
         <div className="container">
           <AnimatedSection>
@@ -250,7 +279,6 @@ export default function Home() {
                 </p>
               </div>
 
-              {/* Toggle vista mapa/cards */}
               {propiedades.length > 0 && (
                 <div style={{
                   display: 'flex',
@@ -263,17 +291,13 @@ export default function Home() {
                   <button
                     onClick={() => setVistaMap(false)}
                     style={{
-                      padding: '0.5rem 1rem',
-                      borderRadius: '6px',
-                      border: 'none',
+                      padding: '0.5rem 1rem', borderRadius: '6px', border: 'none',
                       background: !vistaMap ? 'white' : 'transparent',
                       color: !vistaMap ? 'var(--color-primary)' : 'var(--color-text-muted)',
-                      fontWeight: !vistaMap ? 700 : 500,
-                      cursor: 'pointer',
+                      fontWeight: !vistaMap ? 700 : 500, cursor: 'pointer',
                       fontSize: '0.85rem',
                       boxShadow: !vistaMap ? 'var(--shadow-sm)' : 'none',
-                      transition: 'all 0.15s',
-                      fontFamily: 'inherit',
+                      transition: 'all 0.15s', fontFamily: 'inherit',
                     }}
                   >
                     ⊞ Cards
@@ -281,17 +305,13 @@ export default function Home() {
                   <button
                     onClick={() => setVistaMap(true)}
                     style={{
-                      padding: '0.5rem 1rem',
-                      borderRadius: '6px',
-                      border: 'none',
+                      padding: '0.5rem 1rem', borderRadius: '6px', border: 'none',
                       background: vistaMap ? 'white' : 'transparent',
                       color: vistaMap ? 'var(--color-primary)' : 'var(--color-text-muted)',
-                      fontWeight: vistaMap ? 700 : 500,
-                      cursor: 'pointer',
+                      fontWeight: vistaMap ? 700 : 500, cursor: 'pointer',
                       fontSize: '0.85rem',
                       boxShadow: vistaMap ? 'var(--shadow-sm)' : 'none',
-                      transition: 'all 0.15s',
-                      fontFamily: 'inherit',
+                      transition: 'all 0.15s', fontFamily: 'inherit',
                     }}
                   >
                     🗺️ Mapa
@@ -303,17 +323,11 @@ export default function Home() {
 
           {propiedades.length > 0 ? (
             <>
-              {/* Vista mapa */}
               {vistaMap && (
                 <AnimatedSection>
-                  <MapaPropiedades
-                    propiedades={propiedades}
-                    altura="520px"
-                  />
+                  <MapaPropiedades propiedades={propiedades} altura="520px" />
                 </AnimatedSection>
               )}
-
-              {/* Vista cards */}
               {!vistaMap && (
                 <StaggerGrid className={styles.propiedadesGrid}>
                   {propiedades.map((prop) => (
@@ -367,10 +381,7 @@ export default function Home() {
                 <div className={styles.emptyIcon}>🏡</div>
                 <h3>Próximamente</h3>
                 <p>Estamos incorporando propiedades. ¡Sé el primero en publicar la tuya!</p>
-                <Link
-                  href={user ? '/publicar' : '/login'}
-                  className={styles.ctaPrimary}
-                >
+                <Link href={user ? '/publicar' : '/login'} className={styles.ctaPrimary}>
                   Publicá tu propiedad
                 </Link>
               </div>
@@ -379,7 +390,155 @@ export default function Home() {
         </div>
       </section>
 
-      {/* CTA FINAL */}
+      {/* ── TESTIMONIOS ── */}
+      <section className={`section-padding ${styles.serviciosSection}`}>
+        <div className="container" style={{ textAlign: 'center' }}>
+          <AnimatedSection>
+            <span className="section-label">Propietarios que confían</span>
+            <h2 className="section-title">Lo que dicen nuestros clientes</h2>
+            <p className="section-subtitle" style={{ margin: '0 auto 3rem' }}>
+              Propietarios de todo Uruguay ya generan ingresos con Alquilala.
+            </p>
+          </AnimatedSection>
+
+          <StaggerGrid className={styles.serviciosGrid}>
+            {testimonios.map((t, i) => (
+              <div key={i} style={{
+                background: 'white',
+                borderRadius: '16px',
+                padding: '1.75rem',
+                border: '1px solid var(--color-border-light)',
+                boxShadow: 'var(--shadow-sm)',
+                textAlign: 'left',
+              }}>
+                <div style={{ display: 'flex', gap: '2px', marginBottom: '1rem' }}>
+                  {[...Array(t.estrellas)].map((_, j) => (
+                    <span key={j} style={{ color: '#f59e0b', fontSize: '1.1rem' }}>★</span>
+                  ))}
+                </div>
+                <p style={{
+                  fontSize: '1rem',
+                  color: 'var(--color-text-light)',
+                  lineHeight: 1.7,
+                  marginBottom: '1.5rem',
+                  fontStyle: 'italic',
+                }}>
+                  "{t.texto}"
+                </p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <div style={{
+                    width: 44, height: 44, borderRadius: '50%',
+                    background: 'var(--color-primary)', color: 'white',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontWeight: 700, fontSize: '1.1rem', flexShrink: 0,
+                  }}>
+                    {t.nombre.charAt(0)}
+                  </div>
+                  <div>
+                    <p style={{ fontWeight: 700, color: 'var(--color-primary)', margin: 0, fontSize: '0.95rem' }}>
+                      {t.nombre}
+                    </p>
+                    <p style={{ color: 'var(--color-text-muted)', margin: 0, fontSize: '0.8rem' }}>
+                      {t.propiedad} · {t.ubicacion}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </StaggerGrid>
+        </div>
+      </section>
+
+      {/* ── COMISIÓN VISIBLE ── */}
+      <section className="section-padding" style={{ background: 'white' }}>
+        <div className="container">
+          <AnimatedSection>
+            <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
+              <span className="section-label">Sin letra chica</span>
+              <h2 className="section-title">Precios claros y transparentes</h2>
+              <p className="section-subtitle" style={{ margin: '0 auto' }}>
+                Sin costos fijos ni sorpresas. Solo pagás cuando generás ingresos.
+              </p>
+            </div>
+          </AnimatedSection>
+
+          <AnimatedSection>
+            <div style={{
+              maxWidth: '680px',
+              margin: '0 auto',
+              background: 'linear-gradient(135deg, var(--color-primary) 0%, #0f2942 100%)',
+              borderRadius: '24px',
+              padding: '3rem 2.5rem',
+              textAlign: 'center',
+              color: 'white',
+            }}>
+              <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>💰</div>
+              <p style={{ fontSize: '1rem', fontWeight: 600, opacity: 0.75, marginBottom: '0.25rem' }}>
+                Comisión por reserva concretada
+              </p>
+              <div style={{
+                fontSize: '5.5rem',
+                fontWeight: 900,
+                lineHeight: 1,
+                marginBottom: '0.25rem',
+                letterSpacing: '-2px',
+              }}>
+                15%
+              </div>
+              <p style={{ opacity: 0.7, marginBottom: '2.5rem', fontSize: '0.95rem', lineHeight: 1.6 }}>
+                Solo cuando vos ganás, nosotros ganamos.<br />
+                Sin cuota mensual, sin contrato de permanencia.
+              </p>
+
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr',
+                gap: '0.875rem',
+                marginBottom: '2.5rem',
+                textAlign: 'left',
+              }}>
+                {[
+                  '✅ Publicación en Airbnb y Booking',
+                  '✅ Gestión de reservas 24/7',
+                  '✅ Limpieza entre huéspedes',
+                  '✅ Mantenimiento y reparaciones',
+                  '✅ Atención al huésped completa',
+                  '✅ Reportes de ingresos claros',
+                ].map((item, i) => (
+                  <div key={i} style={{
+                    fontSize: '0.9rem',
+                    opacity: 0.9,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.4rem',
+                  }}>
+                    {item}
+                  </div>
+                ))}
+              </div>
+
+              <Link
+                href={user ? '/publicar' : '/login'}
+                style={{
+                  display: 'inline-block',
+                  background: 'var(--color-accent)',
+                  color: 'white',
+                  padding: '1rem 2.5rem',
+                  borderRadius: '10px',
+                  fontWeight: 700,
+                  fontSize: '1.05rem',
+                  textDecoration: 'none',
+                  transition: 'all 0.2s',
+                }}
+              >
+                Empezar ahora — es gratis →
+              </Link>
+            </div>
+          </AnimatedSection>
+        </div>
+      </section>
+
+      {/* ── CTA FINAL ── */}
       <section className={styles.ctaSection}>
         <div className="container" style={{ textAlign: 'center' }}>
           <AnimatedSection>

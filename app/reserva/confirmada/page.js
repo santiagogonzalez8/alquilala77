@@ -138,7 +138,7 @@ function ReservaConfirmadaContenido() {
                 metodoPago: 'mercadopago',
                 pagoId: datos.paymentId,
               }}
-              propiedad={{ titulo: datos.propiedadId }}
+              propiedad={{ titulo: datos.titulo || datos.propiedadId || 'Propiedad reservada' }}
               userName={user.displayName || ''}
               userEmail={user.email || ''}
             />

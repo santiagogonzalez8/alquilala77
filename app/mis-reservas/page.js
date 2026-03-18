@@ -14,23 +14,35 @@ function MisReservasContenido() {
   const [filtroEstado, setFiltroEstado] = useState('todos');
   const [user, setUser] = useState(null);
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (u) => {
-      if (!u) return;
-      setUser(u);
-      try {
-        const data = await firestoreGetAll('reservas', [
+const [propiedades, setPropiedades] = useState([]);
+
+useEffect(() => {
+  const unsubscribe = onAuthStateChanged(auth, async (u) => {
+    if (!u) return;
+    setUser(u);
+    try {
+      const [data, props] = await Promise.all([
+        firestoreGetAll('reservas', [
           { field: 'userEmail', op: 'EQUAL', value: u.email }
-        ]);
-        setReservas(data);
-      } catch (error) {
-        console.error('Error:', error);
-      } finally {
-        setLoading(false);
-      }
-    });
-    return () => unsubscribe();
-  }, []);
+        ]),
+        firestoreGetAll('propiedades'),
+      ]);
+      setReservas(data);
+      setPropiedades(props);
+    } catch (error) {
+      console.error('Error:', error);
+    } finally {
+      setLoading(false);
+    }
+  });
+  return () => unsubscribe();
+}, []);
+
+// Función para obtener nombre real
+const getNombrePropiedad = (propiedadId) => {
+  const prop = propiedades.find(p => p.id === propiedadId);
+  return prop?.titulo || r.propiedad || 'Propiedad';
+};
 
   const filtradas = reservas.filter(r =>
     filtroEstado === 'todos' || r.estado === filtroEstado
@@ -102,8 +114,8 @@ function MisReservasContenido() {
                 <div key={r.id} className={styles.card}>
                   <div className={styles.cardHeader}>
                     <h3 className={styles.cardTitle}>
-                      {r.propiedad || r.propiedadId || 'Propiedad'}
-                    </h3>
+                      {getNombrePropiedad(r.propiedadId)}
+                        </h3>
                     <span className={`${styles.badge} ${estadoInfo.class}`}>
                       {estadoInfo.label}
                     </span>

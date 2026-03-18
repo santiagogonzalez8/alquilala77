@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-const PROJECT_ID = 'alquilala-77';
+const PROJECT_ID = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'alquilala-77';
 const DATABASE = 'alquilala';
 const API_KEY = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
 
